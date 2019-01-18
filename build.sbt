@@ -96,7 +96,7 @@ lazy val releaseSettings = {
       )
     ),
     homepage := Some(url("https://github.com/ChristopherDavenport/circuit")),
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+    licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     publishMavenStyle := true,
     pomIncludeRepository := { _ =>
       false
