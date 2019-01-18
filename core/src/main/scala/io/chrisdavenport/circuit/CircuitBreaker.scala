@@ -1,4 +1,6 @@
 /*
+ * Initial Copyright
+ * 
  * Copyright (c) 2017-2018 The Typelevel Cats-effect Project Developers
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +16,7 @@
  * limitations under the License.
  * 
  * Modifications 
+ * 
  * Copyright (C) 2019 Christopher Davenport
  * Edits: 
  * 1. Change Package
