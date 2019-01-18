@@ -21,6 +21,7 @@
  * Edits: 
  * 1. Change Package
  * 2. Change Documentation for new packages
+ * 3. Fix Linking Error for ScalaDoc
  */
 package io.chrisdavenport.circuit
 
@@ -292,7 +293,7 @@ object CircuitBreaker {
     }
 
   /** Type-alias to document timestamps specified in milliseconds, as returned by
-   * [[cats.effect.Clock.realTime Clock.realTime]].
+   * Clock.realTime.
    */
   type Timestamp = Long
 
