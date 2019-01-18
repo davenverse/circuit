@@ -17,6 +17,7 @@
  * Copyright (C) 2019 Christopher Davenport
  * Edits: 
  * 1. Change Package
+ * 2. Change Documentation for new packages
  */
 package io.chrisdavenport.circuit
 
@@ -97,7 +98,7 @@ import java.util.concurrent.TimeUnit
  *
  * {{{
  *   import cats.effect._
- *   import cats.effect.concurrent.CircuitBreaker
+ *   import io.chrisdavenport.circuit.CircuitBreaker
  *   import scala.concurrent.duration._
  *
  *   val circuitBreaker = CircuitBreaker[IO].of(
@@ -137,7 +138,8 @@ import java.util.concurrent.TimeUnit
  *
  * This data type was inspired by the availability of
  * [[http://doc.akka.io/docs/akka/current/common/circuitbreaker.html Akka's Circuit Breaker]]
- * and ported to cats-effect from [[https://monix.io Monix]]
+ * and ported to cats-effect from [[https://monix.io Monix]] and when its 
+ * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]]
  */
 trait CircuitBreaker[F[_]] {
   /** Returns a new effect that upon execution will execute the given
