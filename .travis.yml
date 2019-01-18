@@ -8,6 +8,8 @@ scala:
 jdk:
   - openjdk11
 
+dist: xenial
+
 before_install:
   - export PATH=${PATH}:./vendor/bundle
 
