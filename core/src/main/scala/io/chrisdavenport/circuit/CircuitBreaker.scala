@@ -495,7 +495,7 @@ object CircuitBreaker {
       )
     }
 
-    def tryReset[A](open:Open,fa: F[A]): F[A] = {
+    def tryReset[A](open:Open, fa: F[A]): F[A] = {
       clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
         if (open.startedAt + open.resetTimeout.toMillis >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
@@ -507,8 +507,8 @@ object CircuitBreaker {
           }
           ref.modify {
             case closed: Closed => (closed, openOnFail(fa))
-            case open@Open(startedAt, resetTimeout) =>
-              if (startedAt == open.startedAt && open.resetTimeout == resetTimeout) (HalfOpen, onHalfOpen >> resetOnSuccess)
+            case open: Open =>
+              if (open.startedAt + open.resetTimeout.toMillis < now) (HalfOpen, onHalfOpen >> resetOnSuccess)
               else (open, onRejected >> F.raiseError[A](RejectedExecution(open)))
             case HalfOpen => (HalfOpen, onRejected >> F.raiseError[A](RejectedExecution(HalfOpen)))
           }.flatten
