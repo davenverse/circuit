@@ -510,7 +510,7 @@ object CircuitBreaker {
             case currentOpen: Open =>
               if (currentOpen.startedAt == open.startedAt && currentOpen.resetTimeout == open.resetTimeout)
                 (HalfOpen, onHalfOpen >> resetOnSuccess)
-              else (currentOpen, onRejected >> F.raiseError[A](RejectedExecution(open)))
+              else (currentOpen, onRejected >> F.raiseError[A](RejectedExecution(currentOpen)))
             case HalfOpen => (HalfOpen, onRejected >> F.raiseError[A](RejectedExecution(HalfOpen)))
           }.flatten
 
