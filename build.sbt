@@ -20,7 +20,7 @@ lazy val contributors = Seq(
   "ChristopherDavenport" -> "Christopher Davenport"
 )
 
-val catsV = "1.5.0"
+val catsV = "1.6.0"
 val catsEffectV = "1.2.0"
 
 val kindProjectorV = "0.9.9"
