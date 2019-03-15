@@ -21,8 +21,7 @@ lazy val contributors = Seq(
 )
 
 val catsV = "1.6.0"
-val catsEffectV = "0.10.1"
-val fs2V = "0.10.7" // Only Necessary for Backported Branch
+val catsEffectV = "1.2.0"
 
 val kindProjectorV = "0.9.9"
 val betterMonadicForV = "0.3.0-M4"
@@ -50,7 +49,7 @@ lazy val commonSettings = Seq(
   organization := "io.chrisdavenport",
 
   scalaVersion := "2.12.8",
-  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
+  crossScalaVersions := Seq("2.13.0-M5", scalaVersion.value, "2.11.12"),
   scalacOptions += "-Yrangepos",
 
   scalacOptions in (Compile, doc) ++= Seq(
@@ -64,7 +63,6 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel"               %% "cats-core"                  % catsV,
     "org.typelevel"               %% "cats-effect"                % catsEffectV,
-    "co.fs2"                      %% "fs2-core"                   % fs2V,
     "org.scalatest"               %% "scalatest"                  % scalaTestV.value % Test
   )
 )
