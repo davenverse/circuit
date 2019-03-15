@@ -58,13 +58,13 @@ can be in any of these 3 states:
 
   - When the `failures` counter reaches the `maxFailures` count,the breaker is tripped into `Open` state
 
-1. **Open**: The circuit breaker rejects all tasks with an RejectedExecution
+2. **Open**: The circuit breaker rejects all tasks with an RejectedExecution
 
   - all tasks fail fast with `RejectedExecution`
 
   - after the configured `resetTimeout`, the circuit breaker enters a `HalfOpen` state, allowing one task to go through for testing the connection
 
-1. **HalfOpen**: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection
+3. **HalfOpen**: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection
 
   - The first task when `Open` has expired is allowed through without failing fast, just before the circuit breaker is evolved into the `HalfOpen` state
 
