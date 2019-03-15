@@ -26,8 +26,9 @@ package io.chrisdavenport.circuit
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.Deferred
+import cats.effect.IO
+import fs2.async._
+// import cats.effect.concurrent.Deferred
 import org.scalatest.{AsyncFunSuite, Matchers, Succeeded}
 import cats.implicits._
 import scala.concurrent.duration._
@@ -39,10 +40,10 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
   private val Tries = 10000 //if (Platform.isJvm) 10000 else 5000
 
   implicit override def executionContext: ExecutionContext = ExecutionContext.Implicits.global
-  /*_*/
-  implicit val timer: Timer[IO] = IO.timer(executionContext)
-  /*_*/
-  implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+  // /*_*/
+  // implicit val timer: Timer[IO] = IO.timer(executionContext)
+  // /*_*/
+  // implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
 
   private def mkBreaker() = CircuitBreaker.of[IO](
@@ -192,7 +193,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         _ <- IO.sleep(200.millis)
 
         // Testing half-open state
-        d <- Deferred[IO, Unit]
+        d <- promise[IO, Unit]
         fiber <- circuitBreaker.protect(d.get).start
         _ <- IO.sleep(10.millis)
         _ = unsafeState() should matchPattern {
