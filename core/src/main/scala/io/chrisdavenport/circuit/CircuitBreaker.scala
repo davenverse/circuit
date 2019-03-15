@@ -27,9 +27,10 @@ package io.chrisdavenport.circuit
 
 import scala.concurrent.duration._
 
-import cats.effect.{Clock, Sync}
-import cats.effect.concurrent.{Ref}
+import cats.effect.{Sync}
+import fs2.async._
 import cats.implicits._
+
 
 import java.util.concurrent.TimeUnit
 
@@ -242,7 +243,7 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     exponentialBackoffFactor: Double = 1,
     maxResetTimeout: Duration = Duration.Inf
-  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] = {
+  )(implicit F: Sync[F]): F[CircuitBreaker[F]] = {
     of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
   }
 
@@ -277,8 +278,8 @@ object CircuitBreaker {
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
-  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] =
-    Ref.of[F, State](ClosedZero).map { ref =>
+  )(implicit F: Sync[F]): F[CircuitBreaker[F]] =
+    refOf[F, State](ClosedZero).map { ref =>
       new SyncCircuitBreaker[F](
         ref,
         maxFailures,
@@ -394,8 +395,7 @@ object CircuitBreaker {
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
   )(
-    implicit F: Sync[F],
-    clock: Clock[F]
+    implicit F: Sync[F]
   ) extends CircuitBreaker[F] {
 
     require(maxFailures >= 0, "maxFailures >= 0")
@@ -469,18 +469,18 @@ object CircuitBreaker {
     def openOnFail[A](f: F[A]): F[A] = {
       f.attempt.flatMap {
         case Right(a) =>
-          ref.set(ClosedZero) as a
+          ref.setSync(ClosedZero) as a
 
         case Left(err) =>
-          clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
-            ref.modify {
+          clockMonotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+            ref.modify2 {
               case Closed(failures) =>
                 val count = failures + 1
                 if (count >= maxFailures) (Open(now, resetTimeout), onOpen >> F.raiseError[A](err))
                 else (Closed(count), F.raiseError[A](err))
               case open: Open => (open, F.raiseError[A](err))
               case HalfOpen => (HalfOpen, F.raiseError[A](err))
-            }.flatten
+            }.flatMap(_._2)
           }
       }
     }
@@ -496,34 +496,37 @@ object CircuitBreaker {
     }
 
     def tryReset[A](open:Open, fa: F[A]): F[A] = {
-      clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+      clockMonotonic(TimeUnit.MILLISECONDS).flatMap { now =>
         if (open.startedAt + open.resetTimeout.toMillis >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           def resetOnSuccess: F[A] = {
             fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open)) >> F.raiseError(err)
-              case Right(a) => onClosed >> ref.set(ClosedZero) as a
+              case Left(err) => ref.setSync(backoff(open)) >> F.raiseError(err)
+              case Right(a) => onClosed >> ref.setSync(ClosedZero) as a
             }
           }
-          ref.modify {
+          ref.modify2 {
             case closed: Closed => (closed, openOnFail(fa))
             case currentOpen: Open =>
               if (currentOpen.startedAt == open.startedAt && currentOpen.resetTimeout == open.resetTimeout)
                 (HalfOpen, onHalfOpen >> resetOnSuccess)
               else (currentOpen, onRejected >> F.raiseError[A](RejectedExecution(currentOpen)))
             case HalfOpen => (HalfOpen, onRejected >> F.raiseError[A](RejectedExecution(HalfOpen)))
-          }.flatten
+          }.flatMap(_._2)
 
         }
       }
     }
 
     def protect[A](fa: F[A]): F[A] = {
-      ref.modify {
+      ref.modify2 {
         case closed: Closed  => (closed, openOnFail(fa))
         case open: Open  => (open, tryReset(open, fa))
         case HalfOpen => (HalfOpen,  onRejected >> F.raiseError[A](RejectedExecution(HalfOpen)))
-      }.flatten
+      }.flatMap(_._2)
     }
   }
+
+  def clockMonotonic[F[_]](unit: TimeUnit)(implicit F: Sync[F]): F[Long] = 
+    F.delay(unit.convert(System.nanoTime(), NANOSECONDS))
 }
