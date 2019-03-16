@@ -30,6 +30,7 @@ import scala.concurrent.duration._
 import cats.effect.{Clock, Sync}
 import cats.effect.concurrent.{Ref}
 import cats.implicits._
+import cats.effect.implicits._
 
 import java.util.concurrent.TimeUnit
 
@@ -499,6 +500,10 @@ object CircuitBreaker {
       clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
         if (open.startedAt + open.resetTimeout.toMillis >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
+          // This operation must succeed at setting backing to some other
+          // operable state. Otherwise we can get into a state where
+          // the Circuit Breaker is HalfOpen and all new requests are
+          // failed automatically. 
           def resetOnSuccess: F[A] = {
             fa.attempt.flatMap {
               case Left(err) => ref.set(backoff(open)) >> F.raiseError(err)
@@ -512,7 +517,7 @@ object CircuitBreaker {
                 (HalfOpen, onHalfOpen >> resetOnSuccess)
               else (currentOpen, onRejected >> F.raiseError[A](RejectedExecution(currentOpen)))
             case HalfOpen => (HalfOpen, onRejected >> F.raiseError[A](RejectedExecution(HalfOpen)))
-          }.flatten
+          }.flatten.uncancelable
 
         }
       }
