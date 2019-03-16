@@ -194,7 +194,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         // Testing half-open state
         d <- Deferred[IO, Unit]
         fiber <- circuitBreaker.protect(d.get).start
-        _ <- IO.sleep(10.millis)
+        _ <- IO.sleep(1.second)
         _ = unsafeState() should matchPattern {
           case CircuitBreaker.HalfOpen =>
         }
