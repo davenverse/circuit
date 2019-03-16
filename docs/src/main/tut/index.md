@@ -50,29 +50,29 @@ breaker is open.
 The circuit breaker models a concurrent state machine that
 can be in any of these 3 states:
 
-1. **Closed**: During normal operations or when the `CircuitBreaker` starts
+**Closed**: During normal operations or when the `CircuitBreaker` starts
 
-  - Exceptions increment the `failures` counter
+- Exceptions increment the `failures` counter
 
-  - Successes reset the failure count to zero
+- Successes reset the failure count to zero
 
-  - When the `failures` counter reaches the `maxFailures` count,the breaker is tripped into `Open` state
+- When the `failures` counter reaches the `maxFailures` count,the breaker is tripped into `Open` state
 
-2. **Open**: The circuit breaker rejects all tasks with an RejectedExecution
+**Open**: The circuit breaker rejects all tasks with an RejectedExecution
 
-  - all tasks fail fast with `RejectedExecution`
+- all tasks fail fast with `RejectedExecution`
 
-  - after the configured `resetTimeout`, the circuit breaker enters a `HalfOpen` state, allowing one task to go through for testing the connection
+- after the configured `resetTimeout`, the circuit breaker enters a `HalfOpen` state, allowing one task to go through for testing the connection
 
-3. **HalfOpen**: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection
+**HalfOpen**: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection
 
-  - The first task when `Open` has expired is allowed through without failing fast, just before the circuit breaker is evolved into the `HalfOpen` state
+- The first task when `Open` has expired is allowed through without failing fast, just before the circuit breaker is evolved into the `HalfOpen` state
 
-  - All tasks attempted in `HalfOpen` fail-fast with an exception just as in `Open` state
+- All tasks attempted in `HalfOpen` fail-fast with an exception just as in `Open` state
 
-  - If that task attempt succeeds, the breaker is reset back to the `Closed` state, with the `resetTimeout` and the `failures` count also reset to initial values
+- If that task attempt succeeds, the breaker is reset back to the `Closed` state, with the `resetTimeout` and the `failures` count also reset to initial values
 
-  - If the first call fails, the breaker is tripped again into the `Open` state (the `resetTimeout` is multiplied by the exponential backoff factor)
+- If the first call fails, the breaker is tripped again into the `Open` state (the `resetTimeout` is multiplied by the exponential backoff factor)
 
 ## Usage
 
