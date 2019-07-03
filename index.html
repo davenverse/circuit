@@ -113,12 +113,12 @@ can be in any of these 3 states:</p>
   <span class="k">if</span> <span class="o">(</span><span class="n">nr</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="n">nr</span> <span class="k">else</span>
     <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">"dummy"</span><span class="o">)</span>
 <span class="o">}</span>
-<span class="c1">// problematic: cats.effect.IO[Int] = IO$1147363418
+<span class="c1">// problematic: cats.effect.IO[Int] = IO$2068279095
 </span>
 <span class="k">val</span> <span class="n">task</span> <span class="k">=</span> <span class="n">circuitBreaker</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span>
   <span class="k">_</span><span class="o">.</span><span class="n">protect</span><span class="o">(</span><span class="n">problematic</span><span class="o">)</span> <span class="c1">// Circuit Breaker Shared State Location
 </span><span class="o">)</span>
-<span class="c1">// task: cats.effect.IO[Int] = IO$751814889
+<span class="c1">// task: cats.effect.IO[Int] = IO$1844421588
 </span></code></pre>
 </div>
 
@@ -141,4 +141,5 @@ maximum of 10 minutes.</p>
 <h2 id="credits">Credits</h2>
 
 <p>This data type was inspired by the availability of <a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akka’s Circuit Breaker</a> and ported to cats-effect from <a href="https://monix.io">Monix</a> and when its merger halted there, it was moved to <a href="https://github.com/ChristopherDavenport/circuit">circuit</a></p>
-</div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>circuit is designed and developed by <a href="" target="_blank">Christopher Davenport</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/ChristopherDavenport/circuit"><span class="fa fa-github"></span>View on GitHub</a></p></div></div></div></footer></body></html>
+</div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>circuit is designed and developed by <a href="" target="_blank">Christopher Davenport</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/ChristopherDavenport/circuit"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><script src="/circuit/highlight/highlight.pack.js"></script><script>hljs.initHighlighting();
+              </script></div></footer></body></html>
