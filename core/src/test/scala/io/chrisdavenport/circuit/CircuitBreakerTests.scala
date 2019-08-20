@@ -28,7 +28,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.effect.concurrent.Deferred
-import org.scalatest.{AsyncFunSuite, Matchers, Succeeded}
+import org.scalatest.{Matchers, Succeeded}
+import org.scalatest.funsuite.AsyncFunSuite
 import cats.implicits._
 import scala.concurrent.duration._
 
