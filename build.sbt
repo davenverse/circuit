@@ -22,7 +22,7 @@ lazy val contributors = Seq(
 )
 
 val catsV = "2.0.0-RC1"
-val catsEffectV = "2.0.0-RC1"
+val catsEffectV = "2.0.0-RC2"
 val scalaTestV = "3.1.0-SNAP13"
 
 val kindProjectorV = "0.10.3"
