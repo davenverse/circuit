@@ -2,8 +2,8 @@ sudo: false
 language: scala
 
 scala:
-  - 2.13.0
-  - 2.12.8
+  - 2.13.1
+  - 2.12.10
 
 jdk:
   - openjdk11
@@ -21,12 +21,12 @@ install:
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION test
-  - test $TRAVIS_SCALA_VERSION == "2.13.0" || sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
-  - test $TRAVIS_SCALA_VERSION == "2.13.0" || sbt ++$TRAVIS_SCALA_VERSION docs/makeMicrosite
+  - test $TRAVIS_SCALA_VERSION == "2.13.1" || sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+  - test $TRAVIS_SCALA_VERSION == "2.13.1" || sbt ++$TRAVIS_SCALA_VERSION docs/makeMicrosite
 
 after_success:
   - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && test $TRAVIS_REPO_SLUG == "ChristopherDavenport/circuit" && sbt ++$TRAVIS_SCALA_VERSION publish
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && test $TRAVIS_REPO_SLUG == "ChristopherDavenport/circuit" && test $TRAVIS_SCALA_VERSION == "2.12.8" && sbt docs/publishMicrosite
+  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && test $TRAVIS_REPO_SLUG == "ChristopherDavenport/circuit" && test $TRAVIS_SCALA_VERSION == "2.12.10" && sbt docs/publishMicrosite
 
 cache:
   directories:
