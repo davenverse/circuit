@@ -13,7 +13,7 @@ val betterMonadicForV = "0.3.1"
 lazy val `circuit` = project.in(file("."))
   .disablePlugins(MimaPlugin)
   .settings(publish / skip := true)
-  .aggregate(core, docs)
+  .aggregate(core)
 
 lazy val core = project.in(file("core"))
   .settings(commonSettings)
