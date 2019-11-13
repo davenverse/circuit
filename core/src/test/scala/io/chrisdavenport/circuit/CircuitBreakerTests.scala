@@ -220,6 +220,46 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     fa.unsafeToFuture()
   }
 
+  test("keep rejecting with consecutive call errors") {
+
+    val circuitBreaker =
+      CircuitBreaker.of[IO](
+        maxFailures = 2,
+        resetTimeout = 100.millis,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 100.millis
+      ).unsafeRunSync()
+
+    def unsafeState() = circuitBreaker.state.unsafeRunSync()
+
+    val dummy = new RuntimeException("dummy")
+    val taskInError = circuitBreaker.protect(IO[Int](throw dummy))
+    val fa =
+      for {
+        _ <- taskInError.attempt
+        _ = unsafeState() shouldBe CircuitBreaker.Closed(1)
+        _ <- taskInError.attempt
+        _ = unsafeState() should matchPattern {
+          case CircuitBreaker.Open(_, t) if t == 100.millis =>
+        }
+        res1 <- taskInError.attempt
+        _ = res1 should matchPattern {
+          case Left(_: CircuitBreaker.RejectedExecution) =>
+        }
+        _ <- timer.sleep(150.millis)
+        res2 <- taskInError.attempt
+        _ = res2 should matchPattern {
+          case Left(_: RuntimeException) =>
+        }
+        res3 <- taskInError.attempt
+        _ = res3 should matchPattern {
+          case Left(_: CircuitBreaker.RejectedExecution) =>
+        }
+      } yield Succeeded
+
+    fa.unsafeToFuture()
+  }
+
 
   test("validate parameters") {
     intercept[IllegalArgumentException] {
