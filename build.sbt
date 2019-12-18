@@ -3,8 +3,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 val scala213V = "2.13.1"
 val scala212V = "2.12.10"
 
-val catsV = "2.0.0"
-val catsEffectV = "2.0.0"
+val catsV = "2.1.0"
+val catsEffectV = "2.1.0"
 val scalaTestV = "3.2.0-M1"
 
 val kindProjectorV = "0.11.0"
