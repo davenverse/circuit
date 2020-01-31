@@ -470,7 +470,11 @@ object CircuitBreaker {
     def openOnFail[A](f: F[A]): F[A] = {
       f.attempt.flatMap {
         case Right(a) =>
-          ref.set(ClosedZero) as a
+          ref.modify{
+            case Closed(_) => (ClosedZero, F.unit)
+            case HalfOpen => (ClosedZero, onClosed.attempt.void)
+            case Open(_,_) => (ClosedZero, onClosed.attempt.void)
+          }.flatten as a
 
         case Left(err) =>
           clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
@@ -529,7 +533,6 @@ object CircuitBreaker {
             case ExitCase.Error(_) => F.unit
             case ExitCase.Completed => F.unit
           }
-
         }
       }
     }
