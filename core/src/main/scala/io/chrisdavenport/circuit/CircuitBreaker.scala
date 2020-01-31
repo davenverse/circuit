@@ -28,7 +28,7 @@ package io.chrisdavenport.circuit
 import scala.concurrent.duration._
 
 import cats.effect.{Clock, Sync, ExitCase}
-import cats.effect.concurrent.{Ref}
+import cats.effect.concurrent.Ref
 import cats.implicits._
 import cats.effect.implicits._
 
@@ -470,14 +470,18 @@ object CircuitBreaker {
     def openOnFail[A](f: F[A]): F[A] = {
       f.attempt.flatMap {
         case Right(a) =>
-          ref.set(ClosedZero) as a
+          ref.modify{
+            case Closed(_) => (ClosedZero, F.unit)
+            case HalfOpen => (ClosedZero, onClosed.attempt.void)
+            case Open(_,_) => (ClosedZero, onClosed.attempt.void)
+          }.flatten as a
 
         case Left(err) =>
           clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
-                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void >> F.raiseError[A](err))
+                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt >> F.raiseError[A](err))
                 else (Closed(count), F.raiseError[A](err))
               case open: Open => (open, F.raiseError[A](err))
               case HalfOpen => (HalfOpen, F.raiseError[A](err))
@@ -486,9 +490,10 @@ object CircuitBreaker {
       }
     }
 
-    def backoff(open:Open): Open = {
+    def backoff(open: Open, now: Timestamp): Open = {
       def next = (open.resetTimeout.toMillis * exponentialBackoffFactor).millis
       open.copy(
+        startedAt = now,
         resetTimeout = maxResetTimeout match {
           case fin: FiniteDuration => next min fin
           case _: Duration => next
@@ -506,29 +511,28 @@ object CircuitBreaker {
           // failed automatically. 
           def resetOnSuccess: F[A] = {
             fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open)) >> F.raiseError(err)
-              case Right(a) => onClosed.attempt.void >> ref.set(ClosedZero) as a
+              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt >> F.raiseError(err)
+              case Right(a) => ref.set(ClosedZero) >> onClosed.attempt.as(a)
             }
           }
           ref.modify {
             case closed: Closed => (closed, openOnFail(fa))
             case currentOpen: Open =>
               if (currentOpen.startedAt == open.startedAt && currentOpen.resetTimeout == open.resetTimeout)
-                (HalfOpen, onHalfOpen.attempt.void >> resetOnSuccess)
-              else (currentOpen, onRejected.attempt.void >> F.raiseError[A](RejectedExecution(currentOpen)))
-            case HalfOpen => (HalfOpen, onRejected.attempt.void >> F.raiseError[A](RejectedExecution(HalfOpen)))
+                (HalfOpen, onHalfOpen.attempt >> resetOnSuccess)
+              else (currentOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(currentOpen)))
+            case HalfOpen => (HalfOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
-            case ExitCase.Canceled => ref.update{
-              case HalfOpen => open // We Don't leave this in a half-open state.
-              case closed: Closed => closed
-              case open: Open => open
-            }
+            case ExitCase.Canceled => ref.modify{
+              case HalfOpen => (open, onOpen.attempt.void) // We Don't leave this in a half-open state.
+              case closed: Closed => (closed, F.unit)
+              case open: Open => (open, F.unit)
+            }.flatten
             case ExitCase.Error(_) => F.unit
             case ExitCase.Completed => F.unit
           }
-
         }
       }
     }
@@ -537,7 +541,7 @@ object CircuitBreaker {
       ref.modify {
         case closed: Closed  => (closed, openOnFail(fa))
         case open: Open  => (open, tryReset(open, fa))
-        case HalfOpen => (HalfOpen,  onRejected.attempt.void >> F.raiseError[A](RejectedExecution(HalfOpen)))
+        case HalfOpen => (HalfOpen,  onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
       }.flatten
     }
   }

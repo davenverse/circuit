@@ -27,7 +27,7 @@ package io.chrisdavenport.circuit
 import scala.concurrent.{ExecutionContext, Future}
 
 import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.Deferred
+import cats.effect.concurrent.{Deferred, Ref}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
 import cats.implicits._
@@ -220,6 +220,46 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     fa.unsafeToFuture()
   }
 
+  test("keep rejecting with consecutive call errors") {
+
+    val circuitBreaker =
+      CircuitBreaker.of[IO](
+        maxFailures = 2,
+        resetTimeout = 100.millis,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 100.millis
+      ).unsafeRunSync()
+
+    def unsafeState() = circuitBreaker.state.unsafeRunSync()
+
+    val dummy = new RuntimeException("dummy")
+    val taskInError = circuitBreaker.protect(IO[Int](throw dummy))
+    val fa =
+      for {
+        _ <- taskInError.attempt
+        _ = unsafeState() shouldBe CircuitBreaker.Closed(1)
+        _ <- taskInError.attempt
+        _ = unsafeState() should matchPattern {
+          case CircuitBreaker.Open(_, t) if t == 100.millis =>
+        }
+        res1 <- taskInError.attempt
+        _ = res1 should matchPattern {
+          case Left(_: CircuitBreaker.RejectedExecution) =>
+        }
+        _ <- timer.sleep(150.millis)
+        res2 <- taskInError.attempt
+        _ = res2 should matchPattern {
+          case Left(_: RuntimeException) =>
+        }
+        res3 <- taskInError.attempt
+        _ = res3 should matchPattern {
+          case Left(_: CircuitBreaker.RejectedExecution) =>
+        }
+      } yield Succeeded
+
+    fa.unsafeToFuture()
+  }
+
 
   test("validate parameters") {
     intercept[IllegalArgumentException] {
@@ -258,5 +298,44 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     }
 
     Future(Succeeded)
+  }
+
+  test("Validate onClosed is called when closing from longRunning openOnFail"){
+    sealed trait TestFailure extends Throwable
+    case object DidNotOpenOrClose extends TestFailure
+    case object DidNotOpen extends TestFailure
+    case object DidNotClose extends TestFailure
+    val test = for {
+      cb1 <- CircuitBreaker.of[IO](
+        maxFailures = 1,
+        resetTimeout = 1.minute,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 1.minute
+      )
+      opened <- Ref[IO].of(false)
+      closed <- Ref[IO].of(false)
+      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true))
+      dummy = new RuntimeException("dummy")
+      taskInError = cb.protect(IO[Int](throw dummy))
+      wait <- Deferred[IO, Unit]
+      completed <- Deferred[IO, Unit]
+      _ <- (cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- taskInError.attempt
+      didOpen <- opened.get
+      _ <- wait.complete(())
+      _ <- completed.get
+      didClose <- closed.get
+      out <- {
+        if (didOpen && didClose){
+          Succeeded.pure[IO]
+        } else if (!didOpen && !didClose) {
+          IO.raiseError(DidNotOpenOrClose)
+        } else if (!didOpen) {
+          IO.raiseError(DidNotOpen)
+        } else IO.raiseError(DidNotClose)
+      }
+    } yield out
+
+    test.unsafeToFuture()
   }
 }
