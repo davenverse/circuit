@@ -477,7 +477,7 @@ object CircuitBreaker {
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
-                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void >> F.raiseError[A](err))
+                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt >> F.raiseError[A](err))
                 else (Closed(count), F.raiseError[A](err))
               case open: Open => (open, F.raiseError[A](err))
               case HalfOpen => (HalfOpen, F.raiseError[A](err))
@@ -507,17 +507,17 @@ object CircuitBreaker {
           // failed automatically. 
           def resetOnSuccess: F[A] = {
             fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt.void >> F.raiseError(err)
-              case Right(a) => onClosed.attempt.void >> ref.set(ClosedZero) as a
+              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt >> F.raiseError(err)
+              case Right(a) => ref.set(ClosedZero) >> onClosed.attempt.as(a)
             }
           }
           ref.modify {
             case closed: Closed => (closed, openOnFail(fa))
             case currentOpen: Open =>
               if (currentOpen.startedAt == open.startedAt && currentOpen.resetTimeout == open.resetTimeout)
-                (HalfOpen, onHalfOpen.attempt.void >> resetOnSuccess)
-              else (currentOpen, onRejected.attempt.void >> F.raiseError[A](RejectedExecution(currentOpen)))
-            case HalfOpen => (HalfOpen, onRejected.attempt.void >> F.raiseError[A](RejectedExecution(HalfOpen)))
+                (HalfOpen, onHalfOpen.attempt >> resetOnSuccess)
+              else (currentOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(currentOpen)))
+            case HalfOpen => (HalfOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
@@ -538,7 +538,7 @@ object CircuitBreaker {
       ref.modify {
         case closed: Closed  => (closed, openOnFail(fa))
         case open: Open  => (open, tryReset(open, fa))
-        case HalfOpen => (HalfOpen,  onRejected.attempt.void >> F.raiseError[A](RejectedExecution(HalfOpen)))
+        case HalfOpen => (HalfOpen,  onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
       }.flatten
     }
   }
