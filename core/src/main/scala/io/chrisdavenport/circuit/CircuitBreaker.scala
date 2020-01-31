@@ -521,11 +521,11 @@ object CircuitBreaker {
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
-            case ExitCase.Canceled => ref.update{
-              case HalfOpen => open // We Don't leave this in a half-open state.
-              case closed: Closed => closed
-              case open: Open => open
-            }
+            case ExitCase.Canceled => ref.modify{
+              case HalfOpen => (open, onOpen.attempt.void) // We Don't leave this in a half-open state.
+              case closed: Closed => (closed, F.unit)
+              case open: Open => (open, F.unit)
+            }.flatten
             case ExitCase.Error(_) => F.unit
             case ExitCase.Completed => F.unit
           }
