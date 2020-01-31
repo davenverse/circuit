@@ -27,7 +27,7 @@ package io.chrisdavenport.circuit
 import scala.concurrent.{ExecutionContext, Future}
 
 import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.Deferred
+import cats.effect.concurrent.{Deferred, Ref}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
 import cats.implicits._
@@ -298,5 +298,44 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     }
 
     Future(Succeeded)
+  }
+
+  test("Validate onClosed is called when closing from longRunning openOnFail"){
+    sealed trait TestFailure extends Throwable
+    case object DidNotOpenOrClose extends TestFailure
+    case object DidNotOpen extends TestFailure
+    case object DidNotClose extends TestFailure
+    val test = for {
+      cb1 <- CircuitBreaker.of[IO](
+        maxFailures = 1,
+        resetTimeout = 1.minute,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 1.minute
+      )
+      opened <- Ref[IO].of(false)
+      closed <- Ref[IO].of(false)
+      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true))
+      dummy = new RuntimeException("dummy")
+      taskInError = cb.protect(IO[Int](throw dummy))
+      wait <- Deferred[IO, Unit]
+      completed <- Deferred[IO, Unit]
+      _ <- (cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- taskInError.attempt
+      didOpen <- opened.get
+      _ <- wait.complete(())
+      _ <- completed.get
+      didClose <- closed.get
+      out <- {
+        if (didOpen && didClose){
+          Succeeded.pure[IO]
+        } else if (!didOpen && !didClose) {
+          IO.raiseError(DidNotOpenOrClose)
+        } else if (!didOpen) {
+          IO.raiseError(DidNotOpen)
+        } else IO.raiseError(DidNotClose)
+      }
+    } yield out
+
+    test.unsafeToFuture()
   }
 }
