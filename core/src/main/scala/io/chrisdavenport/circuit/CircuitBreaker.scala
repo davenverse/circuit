@@ -28,7 +28,7 @@ package io.chrisdavenport.circuit
 import scala.concurrent.duration._
 
 import cats.effect.{Clock, Sync, ExitCase}
-import cats.effect.concurrent.{Ref}
+import cats.effect.concurrent.Ref
 import cats.implicits._
 import cats.effect.implicits._
 
@@ -486,9 +486,10 @@ object CircuitBreaker {
       }
     }
 
-    def backoff(open:Open): Open = {
+    def backoff(open: Open, now: Timestamp): Open = {
       def next = (open.resetTimeout.toMillis * exponentialBackoffFactor).millis
       open.copy(
+        startedAt = now,
         resetTimeout = maxResetTimeout match {
           case fin: FiniteDuration => next min fin
           case _: Duration => next
@@ -506,7 +507,7 @@ object CircuitBreaker {
           // failed automatically. 
           def resetOnSuccess: F[A] = {
             fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open)) >> F.raiseError(err)
+              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt.void >> F.raiseError(err)
               case Right(a) => onClosed.attempt.void >> ref.set(ClosedZero) as a
             }
           }
