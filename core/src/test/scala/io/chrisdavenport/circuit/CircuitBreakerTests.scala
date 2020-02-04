@@ -338,4 +338,33 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     test.unsafeToFuture()
   }
+
+  test("Handles cancel correctly when half-open") {
+    val cb = CircuitBreaker
+      .of[IO](
+        maxFailures = 1,
+        resetTimeout = 200.millis,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 1.second
+      )
+      .unsafeRunSync()
+
+    def unsafeState() = cb.state.unsafeRunSync()
+
+    val test = for {
+      _ <- cb.protect(IO.raiseError(new Exception("boom!"))).attempt.void
+      _ <- IO.sleep(200.millis)
+      fiberStarted <- Deferred[IO, Unit]
+      fiber <- cb
+        .protect[Unit](fiberStarted.complete(()) >> IO.never)
+        .start
+      _ <- fiberStarted.get
+      _ = unsafeState() shouldBe CircuitBreaker.HalfOpen
+      _ <- fiber.cancel
+    } yield
+      unsafeState() should matchPattern {
+        case CircuitBreaker.Open(_, t) if t == 200.millis =>
+      }
+    test.unsafeToFuture()
+  }
 }
