@@ -4,8 +4,8 @@ val scala213V = "2.13.1"
 val scala212V = "2.12.10"
 
 val catsV = "2.1.1"
-val catsEffectV = "2.1.1"
-val scalaTestV = "3.2.0-M4"
+val catsEffectV = "2.1.3"
+val scalaTestV = "3.2.0-M2"
 
 val kindProjectorV = "0.11.0"
 val betterMonadicForV = "0.3.1"
