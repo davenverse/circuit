@@ -31,6 +31,7 @@ import cats.effect.{Clock, Sync, ExitCase}
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import cats.effect.implicits._
+import cats.Applicative
 
 import java.util.concurrent.TimeUnit
 
