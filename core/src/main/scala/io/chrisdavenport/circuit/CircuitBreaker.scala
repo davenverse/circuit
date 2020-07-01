@@ -31,6 +31,7 @@ import cats.effect.{Clock, Sync, ExitCase}
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import cats.effect.implicits._
+import cats.Applicative
 
 import java.util.concurrent.TimeUnit
 
@@ -545,4 +546,17 @@ object CircuitBreaker {
       }.flatten
     }
   }
+
+  /** Creates a No-Operation circuit breaker which is always closed
+   * and passes through the effect.
+   */
+  def noop[F[_]](implicit F: Applicative[F]): CircuitBreaker[F] =
+    new CircuitBreaker[F] { self =>
+      override def protect[A](fa: F[A]): F[A] = fa
+      override def doOnOpen(callback: F[Unit]): CircuitBreaker[F] = self
+      override def doOnRejected(callback: F[Unit]): CircuitBreaker[F] = self
+      override def doOnHalfOpen(callback: F[Unit]): CircuitBreaker[F] = self
+      override def doOnClosed(callback: F[Unit]): CircuitBreaker[F] = self
+      override def state: F[CircuitBreaker.State] = F.pure(CircuitBreaker.Closed(0))
+    }
 }
