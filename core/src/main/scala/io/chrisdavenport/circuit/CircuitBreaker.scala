@@ -264,6 +264,32 @@ object CircuitBreaker {
    *        the attempt to `Close` fails
    * @param maxResetTimeout is the maximum timeout the circuit breaker
    *        is allowed to use when applying the `exponentialBackoffFactor`
+   */
+  def in[F[_], G[_]](
+    maxFailures: Int,
+    resetTimeout: FiniteDuration,
+    exponentialBackoffFactor: Double = 1,
+    maxResetTimeout: Duration = Duration.Inf
+  )(implicit F: Sync[F], G: Sync[G], clock: Clock[G]): F[CircuitBreaker[G]] = {
+    in[F, G](maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
+  }
+
+  /** Builder for a [[CircuitBreaker]] reference.
+   *
+   * Effect returned by this operation produces a new
+   * [[CircuitBreaker]] each time it is evaluated. To share a state between
+   * multiple consumers, pass [[CircuitBreaker]] as a parameter
+   *
+   * @param maxFailures is the maximum count for failures before
+   *        opening the circuit breaker
+   * @param resetTimeout is the timeout to wait in the `Open` state
+   *        before attempting a close of the circuit breaker (but
+   *        without the backoff factor applied)
+   * @param exponentialBackoffFactor is a factor to use for resetting
+   *        the `resetTimeout` when in the `HalfOpen` state, in case
+   *        the attempt to `Close` fails
+   * @param maxResetTimeout is the maximum timeout the circuit breaker
+   *        is allowed to use when applying the `exponentialBackoffFactor`
    *
    * @param onRejected is for signaling rejected tasks
    * @param onClosed is for signaling a transition to `Closed`
@@ -279,9 +305,54 @@ object CircuitBreaker {
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
-  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] =
-    Ref.of[F, State](ClosedZero).map { ref =>
-      new SyncCircuitBreaker[F](
+  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] = in[F, F](
+    maxFailures = maxFailures,
+    resetTimeout = resetTimeout,
+    exponentialBackoffFactor = exponentialBackoffFactor,
+    maxResetTimeout = maxResetTimeout,
+    onRejected = onRejected,
+    onClosed = onClosed,
+    onHalfOpen = onHalfOpen,
+    onOpen = onOpen
+  )
+
+  /** Builder for a [[CircuitBreaker]] reference.
+   *
+   * Effect returned by this operation produces a new
+   * [[CircuitBreaker]] each time it is evaluated. To share a state between
+   * multiple consumers, pass [[CircuitBreaker]] as a parameter
+   *
+   * This method returns a circuit breaker inside of a different effect from
+   * its own. For a simpler version, see [[of]].
+   *
+   * @param maxFailures is the maximum count for failures before
+   *        opening the circuit breaker
+   * @param resetTimeout is the timeout to wait in the `Open` state
+   *        before attempting a close of the circuit breaker (but
+   *        without the backoff factor applied)
+   * @param exponentialBackoffFactor is a factor to use for resetting
+   *        the `resetTimeout` when in the `HalfOpen` state, in case
+   *        the attempt to `Close` fails
+   * @param maxResetTimeout is the maximum timeout the circuit breaker
+   *        is allowed to use when applying the `exponentialBackoffFactor`
+   *
+   * @param onRejected is for signaling rejected tasks
+   * @param onClosed is for signaling a transition to `Closed`
+   * @param onHalfOpen is for signaling a transition to `HalfOpen`
+   * @param onOpen is for signaling a transition to `Open`
+   */
+  def in[F[_], G[_]](
+    maxFailures: Int,
+    resetTimeout: FiniteDuration,
+    exponentialBackoffFactor: Double,
+    maxResetTimeout: Duration,
+    onRejected: G[Unit],
+    onClosed: G[Unit],
+    onHalfOpen: G[Unit],
+    onOpen: G[Unit]
+  )(implicit F: Sync[F], G: Sync[G], clock: Clock[G]): F[CircuitBreaker[G]] =
+    Ref.in[F, G, State](ClosedZero).map { ref =>
+      new SyncCircuitBreaker[G](
         ref,
         maxFailures,
         resetTimeout,
