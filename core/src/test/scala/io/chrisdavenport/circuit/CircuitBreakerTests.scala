@@ -26,6 +26,7 @@ package io.chrisdavenport.circuit
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import cats.data.OptionT
 import cats.effect.{ContextShift, IO, Timer}
 import cats.effect.concurrent.{Deferred, Ref}
 import org.scalatest.Succeeded
@@ -47,10 +48,10 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
   implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
 
-  private def mkBreaker() = CircuitBreaker.of[IO](
+  private def mkBreaker() = CircuitBreaker.in[OptionT[IO, *], IO](
     maxFailures = 5,
     resetTimeout = 1.minute
-  ).unsafeRunSync()
+  ).value.unsafeRunSync().get
 
 
   test("should work for successful async IOs") {
