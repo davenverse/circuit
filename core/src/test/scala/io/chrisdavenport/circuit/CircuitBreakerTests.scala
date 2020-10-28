@@ -31,7 +31,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.effect.concurrent.{Deferred, Ref}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
-import cats.implicits._
+import cats.syntax.all._
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 
