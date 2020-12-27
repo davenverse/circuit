@@ -221,6 +221,61 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     fa.unsafeToFuture()
   }
 
+  test("transition from Open to Half-Open after resetTimeout") {
+    var openedCount = 0
+    var closedCount = 0
+    var halfOpenCount = 0
+    var rejectedCount = 0
+
+    val circuitBreaker = {
+      val cb = CircuitBreaker.of[IO](
+        maxFailures = 5,
+        resetTimeout = 200.millis,
+        exponentialBackoffFactor = 2,
+        maxResetTimeout = 1.second
+      ).unsafeRunSync()
+
+      cb.doOnOpen(IO { openedCount += 1})
+        .doOnClosed(IO { closedCount += 1 })
+        .doOnHalfOpen(IO { halfOpenCount += 1 })
+        .doOnRejected(IO { rejectedCount += 1 })
+    }
+
+    def unsafeState() = circuitBreaker.state.unsafeRunSync()
+
+    val dummy = new RuntimeException("dummy")
+    val taskInError = circuitBreaker.protect(IO[Int](throw dummy))
+    val taskSuccess = circuitBreaker.protect(IO { 1 })
+    val fa =
+      for {
+        _ <- taskInError.attempt
+        _ <- taskInError.attempt
+        _ = unsafeState() shouldBe CircuitBreaker.Closed(2)
+        // A successful value should reset the counter
+        _ <- taskSuccess
+        _ = unsafeState() shouldBe CircuitBreaker.Closed(0)
+
+        _ <- taskInError.attempt.replicateA(5)
+        _ = unsafeState() should matchPattern {
+          case CircuitBreaker.Open(_, t) if t == 200.millis =>
+        }
+
+        // Testing half-open state
+        _ <- IO.sleep(200.millis) // resetTimeout = 200 ms
+        st = unsafeState()
+        _ = st match {
+          case CircuitBreaker.HalfOpen => assert(true)
+          case other => fail("Expected HalfOpen, but got: " + other.toString)
+        }
+
+        // Should re-open on success
+        _ = unsafeState() shouldBe CircuitBreaker.Closed(0)
+
+      } yield Succeeded
+
+    fa.unsafeToFuture()
+  }
+
   test("keep rejecting with consecutive call errors") {
 
     val circuitBreaker =
