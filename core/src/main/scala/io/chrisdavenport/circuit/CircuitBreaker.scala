@@ -575,7 +575,7 @@ object CircuitBreaker {
 
     def tryReset[A](open: Open, fa: F[A]): F[A] = {
       clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
-        if (open.startedAt + open.resetTimeout.toMillis >= now) onRejected >> F.raiseError(RejectedExecution(open))
+        if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
           // operable state. Otherwise we can get into a state where
