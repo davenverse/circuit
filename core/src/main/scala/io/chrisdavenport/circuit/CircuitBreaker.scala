@@ -365,6 +365,35 @@ object CircuitBreaker {
       )
     }
 
+  /**
+    * For Custom Ref Implementations
+    * Ideally this will be in some valid state for the state machine and that
+    * maxFailures/resetTimeout/exponentialBackoffFactor/maxResetTimeout will all be
+    * consistent across users or else you may wait based on incorrect information.
+    *
+    */
+  def unsafe[G[_]: Sync: Clock](
+    ref: Ref[G, State],
+    maxFailures: Int,
+    resetTimeout: FiniteDuration,
+    exponentialBackoffFactor: Double,
+    maxResetTimeout: Duration,
+    onRejected: G[Unit],
+    onClosed: G[Unit],
+    onHalfOpen: G[Unit],
+    onOpen: G[Unit]
+  ): CircuitBreaker[G] = new SyncCircuitBreaker[G](
+        ref,
+        maxFailures,
+        resetTimeout,
+        exponentialBackoffFactor,
+        maxResetTimeout,
+        onRejected,
+        onClosed,
+        onHalfOpen,
+        onOpen
+      )
+
   /** Type-alias to document timestamps specified in milliseconds, as returned by
    * Clock.realTime.
    */
