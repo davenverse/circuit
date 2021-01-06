@@ -222,7 +222,8 @@ trait CircuitBreaker[F[_]] {
 }
 
 object CircuitBreaker {
-  /** Builder for a [[CircuitBreaker]] reference.
+  /** 
+   * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
    * [[CircuitBreaker]] each time it is evaluated. To share a state between
@@ -248,7 +249,8 @@ object CircuitBreaker {
     of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
   }
 
-  /** Builder for a [[CircuitBreaker]] reference.
+  /** 
+   * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
    * [[CircuitBreaker]] each time it is evaluated. To share a state between
@@ -274,7 +276,8 @@ object CircuitBreaker {
     in[F, G](maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
   }
 
-  /** Builder for a [[CircuitBreaker]] reference.
+  /** 
+   * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
    * [[CircuitBreaker]] each time it is evaluated. To share a state between
@@ -316,14 +319,15 @@ object CircuitBreaker {
     onOpen = onOpen
   )
 
-  /** Builder for a [[CircuitBreaker]] reference.
+  /** 
+   * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
    * [[CircuitBreaker]] each time it is evaluated. To share a state between
    * multiple consumers, pass [[CircuitBreaker]] as a parameter
    *
    * This method returns a circuit breaker inside of a different effect from
-   * its own. For a simpler version, see [[of]].
+   * its own. For a simpler version, see CircuitBreaker.of.
    *
    * @param maxFailures is the maximum count for failures before
    *        opening the circuit breaker
@@ -370,7 +374,6 @@ object CircuitBreaker {
     * Ideally this will be in some valid state for the state machine and that
     * maxFailures/resetTimeout/exponentialBackoffFactor/maxResetTimeout will all be
     * consistent across users or else you may wait based on incorrect information.
-    *
     */
   def unsafe[G[_]: Sync: Clock](
     ref: Ref[G, State],
