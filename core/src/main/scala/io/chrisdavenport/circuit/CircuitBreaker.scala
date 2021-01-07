@@ -622,7 +622,7 @@ object CircuitBreaker {
           ref.modify {
             case closed: Closed => (closed, openOnFail(fa))
             case currentOpen: Open =>
-              if (currentOpen.startedAt == open.startedAt && currentOpen.resetTimeout == open.resetTimeout)
+              if (currentOpen.startedAt === open.startedAt && currentOpen.resetTimeout === open.resetTimeout)
                 (HalfOpen, onHalfOpen.attempt >> resetOnSuccess)
               else (currentOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(currentOpen)))
             case HalfOpen => (HalfOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
