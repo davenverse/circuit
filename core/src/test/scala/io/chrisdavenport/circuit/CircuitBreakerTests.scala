@@ -27,8 +27,8 @@ package io.chrisdavenport.circuit
 import scala.concurrent.{ExecutionContext, Future}
 
 import cats.data.OptionT
-import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.{Deferred, Ref}
+import cats.effect.unsafe.implicits.global
+import cats.effect.{Deferred, IO, Ref}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
 import cats.syntax.all._
@@ -42,10 +42,6 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
   private val Tries = 10000 //if (Platform.isJvm) 10000 else 5000
 
   implicit override def executionContext: ExecutionContext = ExecutionContext.Implicits.global
-  /*_*/
-  implicit val timer: Timer[IO] = IO.timer(executionContext)
-  /*_*/
-  implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
 
   private def mkBreaker() = CircuitBreaker.in[OptionT[IO, *], IO](
@@ -60,7 +56,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     var effect = 0
     val task = circuitBreaker.protect(IO {
       effect += 1
-    } *> IO.shift)
+    } *> IO.cede)
 
     List.fill(Tries)(task).sequence_.unsafeToFuture().map { _ =>
       effect shouldBe Tries
@@ -85,7 +81,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     def loop(n: Int, acc: Int): IO[Int] = {
       if (n > 0)
-        circuitBreaker.protect(IO(acc+1) <* IO.shift)
+        circuitBreaker.protect(IO(acc+1) <* IO.cede)
           .flatMap(s => loop(n-1, s))
       else
         IO.pure(acc)
@@ -100,12 +96,12 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
           IO.pure(acc)
-      } <* IO.shift
+      } <* IO.cede
 
     loop(Tries, 0).unsafeToFuture().map { value =>
       value shouldBe Tries
@@ -132,7 +128,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
@@ -247,7 +243,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         _ = res1 should matchPattern {
           case Left(_: CircuitBreaker.RejectedExecution) =>
         }
-        _ <- timer.sleep(150.millis)
+        _ <- IO.sleep(150.millis)
         res2 <- taskInError.attempt
         _ = res2 should matchPattern {
           case Left(_: RuntimeException) =>

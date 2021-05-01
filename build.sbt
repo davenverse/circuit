@@ -1,11 +1,11 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-val scala213V = "2.13.2"
+val scala213V = "2.13.5"
 val scala212V = "2.12.10"
 
-val catsV = "2.2.0"
-val catsEffectV = "2.2.0"
-val scalaTestV = "3.2.2"
+val catsV = "2.6.0"
+val catsEffectV = "3.1.0"
+val scalaTestV = "3.2.7"
 
 val kindProjectorV = "0.11.3"
 val betterMonadicForV = "0.3.1"
@@ -60,7 +60,7 @@ lazy val docs = project.in(file("docs"))
         "-Ywarn-unused:imports",
         "-Xlint:-missing-interpolator,_"
       ),
-      libraryDependencies += "com.47deg" %% "github4s" % "0.20.1",
+      libraryDependencies += "com.47deg" %% "github4s" % "0.28.4",
       micrositePushSiteWith := GitHub4s,
       micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
       micrositeExtraMdFiles := Map(
