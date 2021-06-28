@@ -27,13 +27,14 @@ package io.chrisdavenport.circuit
 import scala.concurrent.{ExecutionContext, Future}
 
 import cats.data.OptionT
-import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.{Deferred, Ref}
+import cats.effect.{IO, Temporal, Ref, Deferred}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
 import cats.syntax.all._
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
+import cats.effect.unsafe.IORuntime
+import cats.effect.kernel.syntax.temporal
 
 // import catalysts.Platform
 
@@ -41,12 +42,9 @@ import org.scalatest.matchers.should.Matchers
 class CircuitBreakerTests extends AsyncFunSuite with Matchers {
   private val Tries = 10000 //if (Platform.isJvm) 10000 else 5000
 
-  implicit override def executionContext: ExecutionContext = ExecutionContext.Implicits.global
-  /*_*/
-  implicit val timer: Timer[IO] = IO.timer(executionContext)
-  /*_*/
-  implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+  implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
+  implicit override def executionContext: ExecutionContext = runtime.compute
 
   private def mkBreaker() = CircuitBreaker.in[OptionT[IO, *], IO](
     maxFailures = 5,
@@ -60,7 +58,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     var effect = 0
     val task = circuitBreaker.protect(IO {
       effect += 1
-    } *> IO.shift)
+    })
 
     List.fill(Tries)(task).sequence_.unsafeToFuture().map { _ =>
       effect shouldBe Tries
@@ -85,7 +83,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     def loop(n: Int, acc: Int): IO[Int] = {
       if (n > 0)
-        circuitBreaker.protect(IO(acc+1) <* IO.shift)
+        circuitBreaker.protect(IO(acc+1))
           .flatMap(s => loop(n-1, s))
       else
         IO.pure(acc)
@@ -100,12 +98,12 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
           IO.pure(acc)
-      } <* IO.shift
+      }
 
     loop(Tries, 0).unsafeToFuture().map { value =>
       value shouldBe Tries
@@ -132,7 +130,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
@@ -247,7 +245,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         _ = res1 should matchPattern {
           case Left(_: CircuitBreaker.RejectedExecution) =>
         }
-        _ <- timer.sleep(150.millis)
+        _ <- Temporal[IO].sleep(FiniteDuration(150, java.util.concurrent.TimeUnit.MILLISECONDS))
         res2 <- taskInError.attempt
         _ = res2 should matchPattern {
           case Left(_: RuntimeException) =>

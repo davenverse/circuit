@@ -27,8 +27,7 @@ package io.chrisdavenport.circuit
 
 import scala.concurrent.duration._
 
-import cats.effect.{Clock, Sync, ExitCase}
-import cats.effect.concurrent.Ref
+import cats.effect.{Clock, Sync, Ref, Outcome}
 import cats.syntax.all._
 import cats.effect.implicits._
 import cats.Applicative
@@ -581,7 +580,7 @@ object CircuitBreaker {
           }.flatten as a
 
         case Left(err) =>
-          clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+          clock.monotonic.map(_.toMillis).flatMap { now =>
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
@@ -606,7 +605,7 @@ object CircuitBreaker {
     }
 
     def tryReset[A](open: Open, fa: F[A]): F[A] = {
-      clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+      clock.monotonic.map(_.toMillis).flatMap { now =>
         if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
@@ -629,13 +628,13 @@ object CircuitBreaker {
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
-            case ExitCase.Canceled => ref.modify{
+            case Outcome.Canceled() => ref.modify{
               case HalfOpen => (open, onOpen.attempt.void) // We Don't leave this in a half-open state.
               case closed: Closed => (closed, F.unit)
               case open: Open => (open, F.unit)
             }.flatten
-            case ExitCase.Error(_) => F.unit
-            case ExitCase.Completed => F.unit
+            case Outcome.Errored(_) => F.unit
+            case Outcome.Succeeded(_) => F.unit
           }
         }
       }
