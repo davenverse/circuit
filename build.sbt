@@ -51,8 +51,8 @@ lazy val docs = project.in(file("docs"))
         "gray-lighter" -> "#F4F3F4",
         "white-color" -> "#FFFFFF"
       ),
-      fork in tut := true,
-      scalacOptions in Tut --= Seq(
+      tut / fork := true,
+      Tut / scalacOptions --= Seq(
         "-Xfatal-warnings",
         "-Ywarn-unused-import",
         "-Ywarn-numeric-widen",
@@ -93,9 +93,9 @@ inThisBuild(List(
   homepage := Some(url("https://github.com/ChristopherDavenport/circuit")),
   licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html")),
   pomIncludeRepository := { _ => false },
-  scalacOptions in (Compile, doc) ++= Seq(
+  Compile / doc / scalacOptions ++= Seq(
       "-groups",
-      "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
+      "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-doc-source-url", "https://github.com/ChristopherDavenport/circuit/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
 ))
