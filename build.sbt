@@ -25,8 +25,6 @@ lazy val `circuit` = project.in(file("."))
 lazy val core = project.in(file("core"))
   .settings(
     name := "circuit",
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorV cross CrossVersion.full),
-    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV),
     libraryDependencies ++= Seq(
       "org.typelevel"               %% "cats-core"                  % catsV,
       "org.typelevel"               %% "cats-effect"                % catsEffectV,
