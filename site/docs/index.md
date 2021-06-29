@@ -78,7 +78,7 @@ can be in any of these 3 states:
 
 First some imports.
 
-```tut:silent
+```scala mdoc:silent
 import cats.effect._
 import io.chrisdavenport.circuit.CircuitBreaker
 import scala.concurrent.duration._
