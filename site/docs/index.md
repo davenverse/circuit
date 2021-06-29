@@ -78,7 +78,7 @@ can be in any of these 3 states:
 
 First some imports.
 
-```tut:silent
+```scala mdoc:silent
 import cats.effect._
 import io.chrisdavenport.circuit.CircuitBreaker
 import scala.concurrent.duration._
@@ -88,7 +88,7 @@ implicit val T = IO.timer(global)
 
 Then we construct the circuit breaker.
 
-```tut:book
+```scala mdoc
 val circuitBreaker = CircuitBreaker.of[IO](
   maxFailures = 5,
   resetTimeout = 10.seconds
@@ -108,7 +108,7 @@ val task = circuitBreaker.flatMap(
 
 When attempting to close the circuit breaker and resume normal operations, we can also apply an exponential backoff for repeated failed attempts, like so:
 
-```tut:book
+```scala mdoc
 val exponential = CircuitBreaker.of[IO](
   maxFailures = 5,
   resetTimeout = 10.seconds,
