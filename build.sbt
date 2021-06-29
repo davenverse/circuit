@@ -1,4 +1,5 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+import _root_.io.chrisdavenport.sbtmimaversioncheck.MimaVersionCheckKeys.mimaVersionCheckExcludedVersions
 
 val scala213V = "2.13.2"
 val scala212V = "2.12.10"
@@ -30,6 +31,10 @@ lazy val core = project.in(file("core"))
       "org.typelevel"               %% "cats-core"                  % catsV,
       "org.typelevel"               %% "cats-effect"                % catsEffectV,
       "org.scalatest"               %% "scalatest"                  % scalaTestV % Test
+    ),
+    mimaVersionCheckExcludedVersions := Set(
+      "0.4.0",
+      "0.4.2"
     )
   )
 
