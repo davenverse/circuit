@@ -107,9 +107,9 @@ can be in any of these 3 states:</p>
 <span class="o">)</span>
 <span class="c1">// circuitBreaker: IO[CircuitBreaker[IO]] = Map(
 //   source = Delay(
-//     thunk = cats.effect.concurrent.Ref$$$Lambda$6574/1573639505@754fdcbe
+//     thunk = cats.effect.concurrent.Ref$$$Lambda$6734/1826792807@5b31042b
 //   ),
-//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6575/1018137116@36b8dca1,
+//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6735/394493479@1c5e84d7,
 //   trace = StackTrace(
 //     stackTrace = List(
 //       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
@@ -143,11 +143,12 @@ can be in any of these 3 states:</p>
 //       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
 //       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
 //       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:168),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:164),
+//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
+//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
 //       scala.collection.immutable.List.foldLeft(List.scala:79),
 //       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
 //       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
+//       mdoc.internal.cli.MainOps$.process(MainOps.scala:269),
 // ...
 </span>
 <span class="c1">//...
@@ -164,9 +165,9 @@ can be in any of these 3 states:</p>
 <span class="c1">// task: IO[Int] = Bind(
 //   source = Map(
 //     source = Delay(
-//       thunk = cats.effect.concurrent.Ref$$$Lambda$6574/1573639505@754fdcbe
+//       thunk = cats.effect.concurrent.Ref$$$Lambda$6734/1826792807@5b31042b
 //     ),
-//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6575/1018137116@36b8dca1,
+//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6735/394493479@1c5e84d7,
 //     trace = StackTrace(
 //       stackTrace = List(
 //         cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
@@ -200,8 +201,8 @@ can be in any of these 3 states:</p>
 //         mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
 //         mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
 //         mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//         scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:168),
-//         scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:164),
+//         scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
+//         scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
 // ...
 </span></code></pre>
 </div>
@@ -216,9 +217,9 @@ can be in any of these 3 states:</p>
 <span class="o">)</span>
 <span class="c1">// exponential: IO[CircuitBreaker[IO]] = Map(
 //   source = Delay(
-//     thunk = cats.effect.concurrent.Ref$$$Lambda$6574/1573639505@55406b80
+//     thunk = cats.effect.concurrent.Ref$$$Lambda$6734/1826792807@7e7a57b0
 //   ),
-//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6575/1018137116@161676e5,
+//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6735/394493479@63484bc,
 //   trace = StackTrace(
 //     stackTrace = List(
 //       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
@@ -252,11 +253,12 @@ can be in any of these 3 states:</p>
 //       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
 //       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
 //       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:168),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:164),
+//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
+//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
 //       scala.collection.immutable.List.foldLeft(List.scala:79),
 //       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
 //       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
+//       mdoc.internal.cli.MainOps$.process(MainOps.scala:269),
 // ...
 </span></code></pre>
 </div>
