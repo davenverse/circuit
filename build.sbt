@@ -5,7 +5,9 @@ val catsV = "2.6.1"
 val catsEffectV = "2.5.1"
 val scalaTestV = "3.2.9"
 
-ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6", "3.0.0")
+val scala213 = "2.13.6" 
+ThisBuild / scalaVersion := scala213
+ThisBuild / crossScalaVersions := Seq("2.12.14", scala213, "3.0.0")
 
 ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
