@@ -36,7 +36,7 @@ lazy val core = project
 lazy val site = project.in(file("site"))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
-  .enablePlugins(DavenverseSitePlugin)
+  .enablePlugins(DavenverseMicrositePlugin)
   .dependsOn(core)
   .settings{
     import microsites._
