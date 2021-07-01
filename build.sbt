@@ -2,7 +2,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import _root_.io.chrisdavenport.sbtmimaversioncheck.MimaVersionCheckKeys.mimaVersionCheckExcludedVersions
 
 val catsV = "2.6.1"
-val catsEffectV = "2.5.1"
+val catsEffectV = "3.1.1"
 val scalaTestV = "3.2.9"
 
 val scala213 = "2.13.6" 
@@ -27,10 +27,11 @@ lazy val core = project
     ),
     mimaVersionCheckExcludedVersions := Set(
       "0.4.0",
-      "0.4.2"
-    ) ++ {
-      if (isDotty.value) Set("0.4.1", "0.4.3") else Set()
-    }
+      "0.4.1",
+      "0.4.2",
+      "0.4.3",
+      "0.4.4"
+    )
   )
 
 lazy val site = project.in(file("site"))

@@ -27,13 +27,10 @@ package io.chrisdavenport.circuit
 
 import scala.concurrent.duration._
 
-import cats.effect.{Clock, Sync, ExitCase}
-import cats.effect.concurrent.Ref
+import cats.effect._
 import cats.syntax.all._
 import cats.effect.implicits._
 import cats.Applicative
-
-import java.util.concurrent.TimeUnit
 
 /** The `CircuitBreaker` is used to provide stability and prevent
  * cascading failures in distributed systems.
@@ -245,7 +242,7 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     exponentialBackoffFactor: Double = 1,
     maxResetTimeout: Duration = Duration.Inf
-  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] = {
+  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = {
     of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
   }
 
@@ -272,7 +269,7 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     exponentialBackoffFactor: Double = 1,
     maxResetTimeout: Duration = Duration.Inf
-  )(implicit F: Sync[F], G: Sync[G], clock: Clock[G]): F[CircuitBreaker[G]] = {
+  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = {
     in[F, G](maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
   }
 
@@ -308,15 +305,20 @@ object CircuitBreaker {
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
-  )(implicit F: Sync[F], clock: Clock[F]): F[CircuitBreaker[F]] = in[F, F](
-    maxFailures = maxFailures,
-    resetTimeout = resetTimeout,
-    exponentialBackoffFactor = exponentialBackoffFactor,
-    maxResetTimeout = maxResetTimeout,
-    onRejected = onRejected,
-    onClosed = onClosed,
-    onHalfOpen = onHalfOpen,
-    onOpen = onOpen
+  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = 
+  
+  Concurrent[F].ref[State](ClosedZero).map(ref => 
+    new SyncCircuitBreaker[F](
+      ref,
+      maxFailures,
+      resetTimeout,
+      exponentialBackoffFactor,
+      maxResetTimeout,
+      onRejected,
+      onClosed,
+      onHalfOpen,
+      onOpen
+    )
   )
 
   /** 
@@ -354,7 +356,7 @@ object CircuitBreaker {
     onClosed: G[Unit],
     onHalfOpen: G[Unit],
     onOpen: G[Unit]
-  )(implicit F: Sync[F], G: Sync[G], clock: Clock[G]): F[CircuitBreaker[G]] =
+  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] =
     Ref.in[F, G, State](ClosedZero).map { ref =>
       new SyncCircuitBreaker[G](
         ref,
@@ -375,7 +377,7 @@ object CircuitBreaker {
     * maxFailures/resetTimeout/exponentialBackoffFactor/maxResetTimeout will all be
     * consistent across users or else you may wait based on incorrect information.
     */
-  def unsafe[G[_]: Sync: Clock](
+  def unsafe[G[_]: Temporal](
     ref: Ref[G, State],
     maxFailures: Int,
     resetTimeout: FiniteDuration,
@@ -499,8 +501,7 @@ object CircuitBreaker {
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
   )(
-    implicit F: Sync[F],
-    clock: Clock[F]
+    implicit F: Temporal[F]
   ) extends CircuitBreaker[F] {
 
     require(maxFailures >= 0, "maxFailures >= 0")
@@ -581,7 +582,8 @@ object CircuitBreaker {
           }.flatten as a
 
         case Left(err) =>
-          clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+          Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
+          
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
@@ -606,7 +608,7 @@ object CircuitBreaker {
     }
 
     def tryReset[A](open: Open, fa: F[A]): F[A] = {
-      clock.monotonic(TimeUnit.MILLISECONDS).flatMap { now =>
+      Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
         if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
@@ -629,13 +631,13 @@ object CircuitBreaker {
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
-            case ExitCase.Canceled => ref.modify{
+            case Outcome.Canceled() => ref.modify{
               case HalfOpen => (open, onOpen.attempt.void) // We Don't leave this in a half-open state.
               case closed: Closed => (closed, F.unit)
               case open: Open => (open, F.unit)
             }.flatten
-            case ExitCase.Error(_) => F.unit
-            case ExitCase.Completed => F.unit
+            case Outcome.Errored(_) => F.unit
+            case Outcome.Succeeded(_) => F.unit
           }
         }
       }

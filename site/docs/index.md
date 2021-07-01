@@ -82,8 +82,6 @@ First some imports.
 import cats.effect._
 import io.chrisdavenport.circuit.CircuitBreaker
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.global
-implicit val T = IO.timer(global)
 ```
 
 Then we construct the circuit breaker.
