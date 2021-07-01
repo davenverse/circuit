@@ -26,7 +26,9 @@ lazy val core = project
     mimaVersionCheckExcludedVersions := Set(
       "0.4.0",
       "0.4.2"
-    )
+    ) ++ {
+      if (isDotty.value) Set("0.4.1") else Set()
+    }
   )
 
 lazy val site = project.in(file("site"))
