@@ -1,28 +1,21 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import _root_.io.chrisdavenport.sbtmimaversioncheck.MimaVersionCheckKeys.mimaVersionCheckExcludedVersions
 
-val scala213V = "2.13.2"
-val scala212V = "2.12.10"
+val catsV = "2.6.1"
+val catsEffectV = "2.5.1"
+val scalaTestV = "3.2.9"
 
-val catsV = "2.2.0"
-val catsEffectV = "2.2.0"
-val scalaTestV = "3.2.2"
-
-val kindProjectorV = "0.11.3"
-val betterMonadicForV = "0.3.1"
-
-ThisBuild / crossScalaVersions := Seq(scala212V, scala213V)
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6", "3.0.0")
 
 ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html"))
-// ThisBuild / organization := "io.chrisdavenport"
-// ThisBuild / developers := List(Developer("ChristopherDavenport", "Christopher Davenport", "chris@christopherdavenport.tech", url("https://github.com/ChristopherDavenport")))
 
 lazy val `circuit` = project.in(file("."))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
   .aggregate(core)
 
-lazy val core = project.in(file("core"))
+lazy val core = project
+  .in(file("core"))
   .settings(
     name := "circuit",
     libraryDependencies ++= Seq(
