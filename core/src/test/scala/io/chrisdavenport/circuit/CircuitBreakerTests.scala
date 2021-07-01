@@ -185,12 +185,13 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         _ = res should matchPattern {
           case Left(_: CircuitBreaker.RejectedExecution) =>
         }
-        _ <- IO.sleep(1.nano) // This timeout is intentionally small b/c actuall time is not deterministic
+        _ <- IO.cede
         // Should still fail-fast
         res2 <- taskSuccess.attempt
         _ = res2 should matchPattern {
           case Left(_: CircuitBreaker.RejectedExecution) =>
         }
+
         _ <- IO.sleep(500.millis)
 
         // Testing half-open state
