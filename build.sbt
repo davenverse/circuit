@@ -2,7 +2,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import _root_.io.chrisdavenport.sbtmimaversioncheck.MimaVersionCheckKeys.mimaVersionCheckExcludedVersions
 
 val catsV = "2.6.1"
-val catsEffectV = "2.5.1"
+val catsEffectV = "3.1.1"
 val scalaTestV = "3.2.9"
 
 val scala213 = "2.13.6" 
