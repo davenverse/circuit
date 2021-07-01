@@ -114,9 +114,6 @@ jobs:
           gem install saas
           gem install jekyll -v 3.2.1
 
-      - name: Publish project
-        run: sbt ++${{ matrix.scala }} +publish
-
       - name: Publish artifacts to Sonatype
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
