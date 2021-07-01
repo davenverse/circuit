@@ -18,7 +18,6 @@ lazy val `circuit` = project.in(file("."))
 
 lazy val core = project
   .in(file("core"))
-  .disablePlugins(MimaPlugin)
   .settings(
     name := "circuit",
     libraryDependencies ++= Seq(
@@ -26,6 +25,13 @@ lazy val core = project
       "org.typelevel"               %% "cats-effect"                % catsEffectV,
       "org.scalatest"               %% "scalatest"                  % scalaTestV % Test
     ),
+    mimaVersionCheckExcludedVersions := Set(
+      "0.4.0",
+      "0.4.1",
+      "0.4.2",
+      "0.4.3",
+      "0.4.4"
+    )
   )
 
 lazy val site = project.in(file("site"))
