@@ -28,12 +28,12 @@ package io.chrisdavenport.circuit
 import scala.concurrent.duration._
 
 import cats.effect.{Clock, Sync, ExitCase}
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import cats.effect.implicits._
 import cats.Applicative
 
 import java.util.concurrent.TimeUnit
+import cats.effect.Ref
 
 /** The `CircuitBreaker` is used to provide stability and prevent
  * cascading failures in distributed systems.

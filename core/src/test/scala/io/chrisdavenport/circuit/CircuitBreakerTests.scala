@@ -27,13 +27,13 @@ package io.chrisdavenport.circuit
 import scala.concurrent.{ExecutionContext, Future}
 
 import cats.data.OptionT
-import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.{Deferred, Ref}
+import cats.effect.IO
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
 import cats.syntax.all._
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
+import cats.effect.{ Deferred, Ref, Temporal }
 
 // import catalysts.Platform
 
@@ -43,7 +43,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
   implicit override def executionContext: ExecutionContext = ExecutionContext.Implicits.global
   /*_*/
-  implicit val timer: Timer[IO] = IO.timer(executionContext)
+  implicit val timer: Temporal[IO] = IO.timer(executionContext)
   /*_*/
   implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
@@ -100,7 +100,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
@@ -132,7 +132,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     val circuitBreaker = mkBreaker()
 
     def loop(n: Int, acc: Int): IO[Int] =
-      IO.suspend {
+      IO.defer {
         if (n > 0)
           circuitBreaker.protect(loop(n-1, acc+1))
         else
