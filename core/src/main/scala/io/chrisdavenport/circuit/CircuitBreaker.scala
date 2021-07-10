@@ -573,26 +573,26 @@ object CircuitBreaker {
 
 
     def openOnFail[A](f: F[A]): F[A] = {
-      f.attempt.flatMap {
-        case Right(a) =>
+      f.guaranteeCase {
+        case Outcome.Succeeded(_) =>
           ref.modify{
             case Closed(_) => (ClosedZero, F.unit)
             case HalfOpen => (ClosedZero, onClosed.attempt.void)
             case Open(_,_) => (ClosedZero, onClosed.attempt.void)
-          }.flatten as a
+          }.flatten
 
-        case Left(err) =>
+        case Outcome.Errored(_) =>
           Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
-          
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
-                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt >> F.raiseError[A](err))
-                else (Closed(count), F.raiseError[A](err))
-              case open: Open => (open, F.raiseError[A](err))
-              case HalfOpen => (HalfOpen, F.raiseError[A](err))
+                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void)
+                else (Closed(count), F.unit)
+              case open: Open => (open, F.unit)
+              case HalfOpen => (HalfOpen, F.unit)
             }.flatten
           }
+        case Outcome.Canceled() => F.unit
       }
     }
 
@@ -616,9 +616,10 @@ object CircuitBreaker {
           // the Circuit Breaker is HalfOpen and all new requests are
           // failed automatically. 
           def resetOnSuccess: F[A] = {
-            fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt >> F.raiseError(err)
-              case Right(a) => ref.set(ClosedZero) >> onClosed.attempt.as(a)
+            fa.guaranteeCase {
+              case Outcome.Errored(_) => ref.set(backoff(open, now)) >> onOpen.attempt.void
+              case Outcome.Succeeded(_) => ref.set(ClosedZero) >> onClosed.attempt.void
+              case Outcome.Canceled() => F.unit
             }
           }
           ref.modify {
