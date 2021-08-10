@@ -572,27 +572,27 @@ object CircuitBreaker {
     }
 
 
-    def openOnFail[A](f: F[A]): F[A] = {
-      f.attempt.flatMap {
-        case Right(a) =>
+    def openOnFail[A](f: F[A], poll: Poll[F]): F[A] = {
+      poll(f).guaranteeCase {
+        case Outcome.Succeeded(_) =>
           ref.modify{
             case Closed(_) => (ClosedZero, F.unit)
             case HalfOpen => (ClosedZero, onClosed.attempt.void)
             case Open(_,_) => (ClosedZero, onClosed.attempt.void)
-          }.flatten as a
-
-        case Left(err) =>
+          }.flatten
+        case Outcome.Errored(_) =>
           Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
           
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
-                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt >> F.raiseError[A](err))
-                else (Closed(count), F.raiseError[A](err))
-              case open: Open => (open, F.raiseError[A](err))
-              case HalfOpen => (HalfOpen, F.raiseError[A](err))
+                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void)
+                else (Closed(count), Applicative[F].unit)
+              case open: Open => (open, Applicative[F].unit)
+              case HalfOpen => (HalfOpen, Applicative[F].unit)
             }.flatten
           }
+        case Outcome.Canceled() => Applicative[F].unit
       }
     }
 
@@ -607,7 +607,7 @@ object CircuitBreaker {
       )
     }
 
-    def tryReset[A](open: Open, fa: F[A]): F[A] = {
+    def tryReset[A](open: Open, fa: F[A], poll: Poll[F]): F[A] = {
       Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
         if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
@@ -622,12 +622,12 @@ object CircuitBreaker {
             }
           }
           ref.modify {
-            case closed: Closed => (closed, openOnFail(fa))
+            case closed: Closed => (closed, openOnFail(fa, poll))
             case currentOpen: Open =>
               if (currentOpen.startedAt === open.startedAt && currentOpen.resetTimeout === open.resetTimeout)
-                (HalfOpen, onHalfOpen.attempt >> resetOnSuccess)
-              else (currentOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(currentOpen)))
-            case HalfOpen => (HalfOpen, onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
+                (HalfOpen, onHalfOpen.attempt >> poll(resetOnSuccess))
+              else (currentOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(currentOpen))))
+            case HalfOpen => (HalfOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen))))
           }.flatten.guaranteeCase{
             // Handles the case of cancelation during this set of operations
             // With autocancelable flatMap this guarantee might not hold.
@@ -644,11 +644,13 @@ object CircuitBreaker {
     }
 
     def protect[A](fa: F[A]): F[A] = {
-      ref.modify {
-        case closed: Closed  => (closed, openOnFail(fa))
-        case open: Open  => (open, tryReset(open, fa))
-        case HalfOpen => (HalfOpen,  onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen)))
-      }.flatten
+      Concurrent[F].uncancelable{poll => 
+        ref.modify {
+          case closed: Closed  => (closed, openOnFail(fa, poll))
+          case open: Open  => (open, tryReset(open, fa, poll))
+          case HalfOpen => (HalfOpen, poll(onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen))))
+        }.flatten
+      }
     }
   }
 
