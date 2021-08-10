@@ -227,6 +227,7 @@ trait CircuitBreaker[F[_]] {
 }
 
 object CircuitBreaker {
+
   /** 
    * Builder for a [[CircuitBreaker]] reference.
    *
@@ -648,11 +649,11 @@ object CircuitBreaker {
 
     def protect[A](fa: F[A]): F[A] = {
       Concurrent[F].uncancelable{poll => 
-        ref.modify {
-          case closed: Closed  => (closed, openOnFail(fa, poll))
-          case open: Open  => (open, tryReset(open, fa, poll))
-          case HalfOpen => (HalfOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen))))
-        }.flatten
+        ref.get.flatMap {
+          case _: Closed  => openOnFail(fa, poll)
+          case open: Open  => tryReset(open, fa, poll)
+          case HalfOpen => onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen)))
+        }
       }
     }
   }
