@@ -147,6 +147,14 @@ import cats.Applicative
 trait CircuitBreaker[F[_]] {
   /** Returns a new effect that upon execution will execute the given
    * effect with the protection of this circuit breaker.
+   * 
+   * Actions are conditonal on action termination, either via timeout
+   * cancellation, or some other user controlled mechanism. If a behavior
+   * executes and never completes. If that was the sole responsible
+   * carrier for a HalfOpen you could hold this infinitely in HalfOpen.
+   * To prevent this please apply some mechanism to assure your
+   * action completes eventually.
+   * 
    */
   def protect[A](fa: F[A]): F[A]
 
