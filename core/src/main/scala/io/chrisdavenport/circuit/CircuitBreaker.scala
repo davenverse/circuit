@@ -615,30 +615,25 @@ object CircuitBreaker {
           // operable state. Otherwise we can get into a state where
           // the Circuit Breaker is HalfOpen and all new requests are
           // failed automatically. 
-          def resetOnSuccess: F[A] = {
-            fa.attempt.flatMap {
-              case Left(err) => ref.set(backoff(open, now)) >> onOpen.attempt >> F.raiseError(err)
-              case Right(a) => ref.set(ClosedZero) >> onClosed.attempt.as(a)
+          def resetOnSuccess(poll: Poll[F]): F[A] = {
+            poll(fa).guaranteeCase {
+              case Outcome.Succeeded(_) => ref.set(ClosedZero) >> onClosed.attempt.void
+              case Outcome.Errored(_) => ref.set(backoff(open, now)) >> onOpen.attempt.void
+              case Outcome.Canceled() => ref.modify{
+                  case HalfOpen => (open, onOpen.attempt.void)
+                  case closed: Closed => (closed, F.unit)
+                  case open: Open => (open, F.unit)
+                }.flatten
             }
           }
           ref.modify {
             case closed: Closed => (closed, openOnFail(fa, poll))
             case currentOpen: Open =>
               if (currentOpen.startedAt === open.startedAt && currentOpen.resetTimeout === open.resetTimeout)
-                (HalfOpen, onHalfOpen.attempt >> poll(resetOnSuccess))
+                (HalfOpen, onHalfOpen.attempt >> resetOnSuccess(poll))
               else (currentOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(currentOpen))))
             case HalfOpen => (HalfOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen))))
-          }.flatten.guaranteeCase{
-            // Handles the case of cancelation during this set of operations
-            // With autocancelable flatMap this guarantee might not hold.
-            case Outcome.Canceled() => ref.modify{
-              case HalfOpen => (open, onOpen.attempt.void) // We Don't leave this in a half-open state.
-              case closed: Closed => (closed, F.unit)
-              case open: Open => (open, F.unit)
-            }.flatten
-            case Outcome.Errored(_) => F.unit
-            case Outcome.Succeeded(_) => F.unit
-          }
+          }.flatten
         }
       }
     }
@@ -648,7 +643,7 @@ object CircuitBreaker {
         ref.modify {
           case closed: Closed  => (closed, openOnFail(fa, poll))
           case open: Open  => (open, tryReset(open, fa, poll))
-          case HalfOpen => (HalfOpen, poll(onRejected.attempt >> F.raiseError[A](RejectedExecution(HalfOpen))))
+          case HalfOpen => (HalfOpen, onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen))))
         }.flatten
       }
     }
