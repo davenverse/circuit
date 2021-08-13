@@ -144,7 +144,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
     val circuitBreaker = {
       val cb = CircuitBreaker.in[SyncIO, IO](
         maxFailures = 5,
-        resetTimeout = 200.millis,
+        resetTimeout = 500.millis,
         exponentialBackoffFactor = 2,
         maxResetTimeout = 1.second
       ).unsafeRunSync()
@@ -171,21 +171,20 @@ class CircuitBreakerTests extends CatsEffectSuite {
 
         _ <- taskInError.attempt.replicateA(5)
         _ <- circuitBreaker.state.map {
-          case CircuitBreaker.Open(_, t)=> assertEquals(t, 200.millis)
+          case CircuitBreaker.Open(_, t)=> assertEquals(t, 500.millis)
           case _ => assert(false)
         }
         _ <- taskSuccess.attempt.map{
           case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
           case _ => assert(false)
         }
-        _ <- IO.cede
         // Should still fail-fast
         _ <- taskSuccess.attempt.map{
           case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
           case _ => assert(false)
         }
 
-        _ <- IO.sleep(500.millis)
+        _ <- IO.sleep(1000.millis)
 
         // Testing half-open state
         d <- Deferred[IO, Unit]
