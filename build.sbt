@@ -24,8 +24,10 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "org.typelevel"               %%% "cats-core"                  % catsV,
       "org.typelevel"               %%% "cats-effect"                % catsEffectV,
-      "org.scalatest"               %%% "scalatest"                  % scalaTestV % Test
+      "org.typelevel" %%% "munit-cats-effect-3" % "1.0.5" % Test,
     ),
+  ).jsSettings(
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule)},
   )
 
 lazy val site = project.in(file("site"))
