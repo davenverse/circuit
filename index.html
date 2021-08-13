@@ -102,8 +102,12 @@ can be in any of these 3 states:</p>
   <span class="n">resetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">seconds</span>
 <span class="o">)</span>
 <span class="c1">// circuitBreaker: IO[CircuitBreaker[IO]] = Map(</span>
-<span class="c1">//   ioe = Delay(thunk = cats.effect.IO$$$Lambda$6699/991276761@4134811f),</span>
-<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6700/1552755858@4b6ea40f</span>
+<span class="c1">//   ioe = Delay(</span>
+<span class="c1">//     thunk = cats.effect.IO$$$Lambda$13477/195114771@376612a4,</span>
+<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$13478/1591962726@3c65a915,</span>
+<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
 <span class="c1">// )</span>
 
 <span class="c1">//...</span>
@@ -112,17 +116,25 @@ can be in any of these 3 states:</p>
   <span class="nf">if</span> <span class="o">(</span><span class="n">nr</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="n">nr</span> <span class="k">else</span>
     <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">"dummy"</span><span class="o">)</span>
 <span class="o">}</span>
-<span class="c1">// problematic: IO[Int] = Delay(thunk = &lt;function0&gt;)</span>
+<span class="c1">// problematic: IO[Int] = Delay(</span>
+<span class="c1">//   thunk = &lt;function0&gt;,</span>
+<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
+<span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">circuitBreaker</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span>
   <span class="nv">_</span><span class="o">.</span><span class="py">protect</span><span class="o">(</span><span class="n">problematic</span><span class="o">)</span> <span class="c1">// Circuit Breaker Shared State Location</span>
 <span class="o">)</span>
 <span class="c1">// task: IO[Int] = FlatMap(</span>
 <span class="c1">//   ioe = Map(</span>
-<span class="c1">//     ioe = Delay(thunk = cats.effect.IO$$$Lambda$6699/991276761@4134811f),</span>
-<span class="c1">//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6700/1552755858@4b6ea40f</span>
+<span class="c1">//     ioe = Delay(</span>
+<span class="c1">//       thunk = cats.effect.IO$$$Lambda$13477/195114771@376612a4,</span>
+<span class="c1">//       event = cats.effect.tracing.TracingEvent$StackTrace</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$13478/1591962726@3c65a915,</span>
+<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   f = &lt;function1&gt;</span>
+<span class="c1">//   f = &lt;function1&gt;,</span>
+<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -135,8 +147,12 @@ can be in any of these 3 states:</p>
   <span class="n">maxResetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">minutes</span>
 <span class="o">)</span>
 <span class="c1">// exponential: IO[CircuitBreaker[IO]] = Map(</span>
-<span class="c1">//   ioe = Delay(thunk = cats.effect.IO$$$Lambda$6699/991276761@5cfed9c8),</span>
-<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$6700/1552755858@7e24daf4</span>
+<span class="c1">//   ioe = Delay(</span>
+<span class="c1">//     thunk = cats.effect.IO$$$Lambda$13477/195114771@2a33f017,</span>
+<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$13478/1591962726@73cd5096,</span>
+<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
