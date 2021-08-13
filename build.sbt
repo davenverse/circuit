@@ -14,31 +14,25 @@ ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses
 lazy val `circuit` = project.in(file("."))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core)
+  .aggregate(core.jvm, core.js)
 
-lazy val core = project
+lazy val core = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
   .in(file("core"))
   .settings(
     name := "circuit",
     libraryDependencies ++= Seq(
-      "org.typelevel"               %% "cats-core"                  % catsV,
-      "org.typelevel"               %% "cats-effect"                % catsEffectV,
-      "org.scalatest"               %% "scalatest"                  % scalaTestV % Test
+      "org.typelevel"               %%% "cats-core"                  % catsV,
+      "org.typelevel"               %%% "cats-effect"                % catsEffectV,
+      "org.scalatest"               %%% "scalatest"                  % scalaTestV % Test
     ),
-    mimaVersionCheckExcludedVersions := Set(
-      "0.4.0",
-      "0.4.1",
-      "0.4.2",
-      "0.4.3",
-      "0.4.4"
-    )
   )
 
 lazy val site = project.in(file("site"))
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(DavenverseMicrositePlugin)
-  .dependsOn(core)
+  .dependsOn(core.jvm)
   .settings{
     import microsites._
     Seq(
