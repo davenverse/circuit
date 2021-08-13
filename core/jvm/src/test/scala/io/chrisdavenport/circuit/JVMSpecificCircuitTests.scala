@@ -24,8 +24,8 @@ class JVMSpecificCircuitTests extends CatsEffectSuite {
       taskInError = cb.protect(IO[Int](throw dummy))
       wait <- Deferred[IO, Unit]
       completed <- Deferred[IO, Unit]
-      _ <- taskInError.attempt
       _ <- (cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- taskInError.attempt
       _ <- wait.complete(())
       _ <- completed.get
       didClose <- closed.get
