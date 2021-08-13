@@ -334,6 +334,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       completed <- Deferred[IO, Unit]
       _ <- (started.complete(()) >> cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
       _ <- started.get
+      _ <- IO.sleep(100.millis)
       _ <- taskInError.attempt
       _ <- opened.get.map(assertEquals(_, true))
       _ <- wait.complete(())
