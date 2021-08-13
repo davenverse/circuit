@@ -325,8 +325,9 @@ class CircuitBreakerTests extends CatsEffectSuite {
         exponentialBackoffFactor = 1,
         maxResetTimeout = 1.minute
       )
+      opened <- Ref[IO].of(false)
       closed <- Ref[IO].of(false)
-      cb = cb1.doOnClosed(closed.set(true))
+      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true))
       dummy = new RuntimeException("dummy")
       taskInError = cb.protect(IO[Int](throw dummy))
       started <- Deferred[IO, Unit]
@@ -335,6 +336,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       _ <- (started.complete(()) >> cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
       _ <- started.get
       _ <- taskInError.attempt
+      _ <- opened.get.map(assertEquals(_, true))
       _ <- wait.complete(())
       _ <- completed.get
       didClose <- closed.get
