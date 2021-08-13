@@ -316,4 +316,30 @@ class CircuitBreakerTests extends CatsEffectSuite {
     } yield ()
     test
   }
+
+  test("Validate onClosed is called when closing from longRunning openOnFail"){
+    val test = for {
+      cb1 <- CircuitBreaker.of[IO](
+        maxFailures = 1,
+        resetTimeout = 1.minute,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 1.minute
+      )
+      closed <- Ref[IO].of(false)
+      cb = cb1.doOnClosed(closed.set(true))
+      dummy = new RuntimeException("dummy")
+      taskInError = cb.protect(IO[Int](throw dummy))
+      started <- Deferred[IO, Unit]
+      wait <- Deferred[IO, Unit]
+      completed <- Deferred[IO, Unit]
+      _ <- (started.complete(()) >> cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- started.get
+      _ <- taskInError.attempt
+      _ <- wait.complete(())
+      _ <- completed.get
+      didClose <- closed.get
+    } yield assertEquals(didClose, true)
+
+    test
+  }
 }

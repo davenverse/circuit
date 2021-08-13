@@ -17,7 +17,7 @@ lazy val `circuit` = project.in(file("."))
   .aggregate(core.jvm, core.js)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("core"))
   .settings(
     name := "circuit",
