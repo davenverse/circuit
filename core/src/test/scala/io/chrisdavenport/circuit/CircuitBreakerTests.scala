@@ -24,33 +24,25 @@
  */
 package io.chrisdavenport.circuit
 
-import scala.concurrent.{ExecutionContext, Future}
-
-import cats.data.OptionT
-import org.scalatest.Succeeded
-import org.scalatest.funsuite.AsyncFunSuite
 import cats.syntax.all._
 import scala.concurrent.duration._
-import org.scalatest.matchers.should.Matchers
 import cats.effect._
 // import cats.effect.syntax._
 import cats.effect.unsafe._
 
 // import catalysts.Platform
+import munit.CatsEffectSuite
 
-
-class CircuitBreakerTests extends AsyncFunSuite with Matchers {
+class CircuitBreakerTests extends CatsEffectSuite {
   private val Tries = 10000 //if (Platform.isJvm) 10000 else 5000
 
 
   implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
-  implicit override def executionContext: ExecutionContext = runtime.compute
-
-  private def mkBreaker() = CircuitBreaker.in[OptionT[IO, *], IO](
+  private def mkBreaker() = CircuitBreaker.in[SyncIO, IO](
     maxFailures = 5,
     resetTimeout = 1.minute
-  ).value.unsafeRunSync().get
+  ).unsafeRunSync()
 
 
   test("should work for successful async IOs") {
@@ -61,8 +53,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
       effect += 1
     })
 
-    List.fill(Tries)(task).sequence_.unsafeToFuture().map { _ =>
-      effect shouldBe Tries
+    List.fill(Tries)(task).sequence_.map { _ =>
+      assertEquals(effect, Tries)
     }
   }
 
@@ -74,8 +66,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
       effect += 1
     })
 
-    List.fill(Tries)(task).sequence_.unsafeToFuture().map { _ =>
-      effect shouldBe Tries
+    List.fill(Tries)(task).sequence_.map { _ =>
+      assertEquals(effect, Tries)
     }
   }
 
@@ -90,8 +82,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         IO.pure(acc)
     }
 
-    loop(Tries, 0).unsafeToFuture().map { value =>
-      value shouldBe Tries
+    loop(Tries, 0).map { value =>
+      assertEquals(value, Tries)
     }
   }
 
@@ -106,8 +98,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
           IO.pure(acc)
       }
 
-    loop(Tries, 0).unsafeToFuture().map { value =>
-      value shouldBe Tries
+    loop(Tries, 0).map { value =>
+      assertEquals(value, Tries)
     }
   }
 
@@ -122,8 +114,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         IO.pure(acc)
     }
 
-    loop(Tries, 0).unsafeToFuture().map { value =>
-      value shouldBe Tries
+    loop(Tries, 0).map { value =>
+      assertEquals(value, Tries)
     }
   }
 
@@ -138,8 +130,8 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
           IO.pure(acc)
       }
 
-    loop(Tries, 0).unsafeToFuture().map { value =>
-      value shouldBe Tries
+    loop(Tries, 0).map { value =>
+      assertEquals(value, Tries)
     }
   }
 
@@ -150,9 +142,9 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
     var rejectedCount = 0
 
     val circuitBreaker = {
-      val cb = CircuitBreaker.of[IO](
+      val cb = CircuitBreaker.in[SyncIO, IO](
         maxFailures = 5,
-        resetTimeout = 200.millis,
+        resetTimeout = 500.millis,
         exponentialBackoffFactor = 2,
         maxResetTimeout = 1.second
       ).unsafeRunSync()
@@ -163,7 +155,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
         .doOnRejected(IO { rejectedCount += 1 })
     }
 
-    def unsafeState() = circuitBreaker.state.unsafeRunSync()
+    // def unsafeState() = circuitBreaker.state.unsafeRunSync()
 
     val dummy = new RuntimeException("dummy")
     val taskInError = circuitBreaker.protect(IO[Int](throw dummy))
@@ -172,100 +164,95 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
       for {
         _ <- taskInError.attempt
         _ <- taskInError.attempt
-        _ = unsafeState() shouldBe CircuitBreaker.Closed(2)
+        _ <- circuitBreaker.state.map(assertEquals(_, CircuitBreaker.Closed(2)))
         // A successful value should reset the counter
         _ <- taskSuccess
-        _ = unsafeState() shouldBe CircuitBreaker.Closed(0)
+        _ <- circuitBreaker.state.map(assertEquals(_, CircuitBreaker.Closed(0)))
 
         _ <- taskInError.attempt.replicateA(5)
-        _ = unsafeState() should matchPattern {
-          case CircuitBreaker.Open(_, t) if t == 200.millis =>
+        _ <- circuitBreaker.state.map {
+          case CircuitBreaker.Open(_, t)=> assertEquals(t, 500.millis)
+          case _ => assert(false)
         }
-        res <- taskSuccess.attempt
-        _ = res should matchPattern {
-          case Left(_: CircuitBreaker.RejectedExecution) =>
+        _ <- taskSuccess.attempt.map{
+          case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+          case _ => assert(false)
         }
-        _ <- IO.cede
         // Should still fail-fast
-        res2 <- taskSuccess.attempt
-        _ = res2 should matchPattern {
-          case Left(_: CircuitBreaker.RejectedExecution) =>
+        _ <- taskSuccess.attempt.map{
+          case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+          case _ => assert(false)
         }
 
-        _ <- IO.sleep(500.millis)
+        _ <- IO.sleep(1000.millis)
 
         // Testing half-open state
         d <- Deferred[IO, Unit]
         fiber <- circuitBreaker.protect(d.get).start
         _ <- IO.sleep(2.seconds)
-        _ = unsafeState() should matchPattern {
-          case CircuitBreaker.HalfOpen =>
-        }
+        _ <- circuitBreaker.state.map(assertEquals(_, CircuitBreaker.HalfOpen))
 
         // Should reject other tasks
 
-        res3 <- taskSuccess.attempt
-        _ = res3 should matchPattern {
-          case Left(_: CircuitBreaker.RejectedExecution) =>
+        _ <- taskSuccess.attempt.map{
+          case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+          case _ => assert(false)
         }
 
         _ <- d.complete(())
         _ <- fiber.join
 
         // Should re-open on success
-        _ = unsafeState() shouldBe CircuitBreaker.Closed(0)
+        _ <- circuitBreaker.state.map(assertEquals(_, CircuitBreaker.Closed(0)))
+      } yield assertEquals( (openedCount, closedCount, halfOpenCount, rejectedCount), (1, 1, 1, 3))
 
-        _ = (openedCount, closedCount, halfOpenCount, rejectedCount) shouldBe ((1, 1, 1, 3))
-      } yield Succeeded
-
-    fa.unsafeToFuture()
+    fa
   }
 
   test("keep rejecting with consecutive call errors") {
 
     val circuitBreaker =
-      CircuitBreaker.of[IO](
+      CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = 100.millis,
         exponentialBackoffFactor = 1,
         maxResetTimeout = 100.millis
       ).unsafeRunSync()
 
-    def unsafeState() = circuitBreaker.state.unsafeRunSync()
-
     val dummy = new RuntimeException("dummy")
     val taskInError = circuitBreaker.protect(IO[Int](throw dummy))
     val fa =
       for {
         _ <- taskInError.attempt
-        _ = unsafeState() shouldBe CircuitBreaker.Closed(1)
+        _ <- circuitBreaker.state.map(assertEquals(_, CircuitBreaker.Closed(1)))
         _ <- taskInError.attempt
-        _ = unsafeState() should matchPattern {
-          case CircuitBreaker.Open(_, t) if t == 100.millis =>
+        _ <- circuitBreaker.state.map{
+          case CircuitBreaker.Open(_, t) => assertEquals(t, 100.millis)
+          case _ => assert(false)
         }
-        res1 <- taskInError.attempt
-        _ = res1 should matchPattern {
-          case Left(_: CircuitBreaker.RejectedExecution) =>
+        _ <- taskInError.attempt.map{
+          case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+          case _ => assert(false)
         }
         _ <- Temporal[IO].sleep(150.millis)
-        res2 <- taskInError.attempt
-        _ = res2 should matchPattern {
-          case Left(_: RuntimeException) =>
+        _ <- taskInError.attempt.map{
+          case Left(_: RuntimeException) => assert(true)
+          case _ => assert(false)
         }
-        res3 <- taskInError.attempt
-        _ = res3 should matchPattern {
-          case Left(_: CircuitBreaker.RejectedExecution) =>
+        _ <- taskInError.attempt.map{
+          case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+          case _ => assert(false)
         }
-      } yield Succeeded
+      } yield ()
 
-    fa.unsafeToFuture()
+    fa
   }
 
 
   test("validate parameters") {
     intercept[IllegalArgumentException] {
       // Positive maxFailures
-      CircuitBreaker.of[IO](
+      CircuitBreaker.in[SyncIO, IO](
         maxFailures = -1,
         resetTimeout = 1.minute
       ).unsafeRunSync()
@@ -273,7 +260,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     intercept[IllegalArgumentException] {
       // Strictly positive resetTimeout
-      CircuitBreaker.of[IO](
+      CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = -1.minute
       ).unsafeRunSync()
@@ -281,7 +268,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     intercept[IllegalArgumentException] {
       // exponentialBackoffFactor >= 1
-      CircuitBreaker.of[IO](
+      CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = 1.minute,
         exponentialBackoffFactor = 0.5
@@ -290,7 +277,7 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
 
     intercept[IllegalArgumentException] {
       // Strictly positive maxResetTimeout
-      CircuitBreaker.of[IO](
+      CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = 1.minute,
         exponentialBackoffFactor = 2,
@@ -298,14 +285,38 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
       ).unsafeRunSync()
     }
 
-    Future(Succeeded)
+    assert(true)
+  }
+
+  test("Handles cancel correctly when half-open") {
+    val cb = CircuitBreaker
+      .in[SyncIO, IO](
+        maxFailures = 1,
+        resetTimeout = 200.millis,
+        exponentialBackoffFactor = 1,
+        maxResetTimeout = 1.second
+      )
+      .unsafeRunSync()
+
+    val test = for {
+      _ <- cb.protect(IO.raiseError(new Exception("boom!"))).attempt.void
+      _ <- IO.sleep(200.millis)
+      fiberStarted <- Deferred[IO, Unit]
+      fiber <- cb
+        .protect[Unit](fiberStarted.complete(()) >> IO.never)
+        .start
+      _ <- fiberStarted.get
+      _ <- cb.state.map(assertEquals(_, CircuitBreaker.HalfOpen))
+      _ <- fiber.cancel
+      _ <- cb.state.map{
+        case CircuitBreaker.Open(_, t) => assertEquals(t, 200.millis)
+        case _ => assert(false)
+      }
+    } yield ()
+    test
   }
 
   test("Validate onClosed is called when closing from longRunning openOnFail"){
-    sealed trait TestFailure extends Throwable
-    case object DidNotOpenOrClose extends TestFailure
-    case object DidNotOpen extends TestFailure
-    case object DidNotClose extends TestFailure
     val test = for {
       cb1 <- CircuitBreaker.of[IO](
         maxFailures = 1,
@@ -318,54 +329,19 @@ class CircuitBreakerTests extends AsyncFunSuite with Matchers {
       cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true))
       dummy = new RuntimeException("dummy")
       taskInError = cb.protect(IO[Int](throw dummy))
+      started <- Deferred[IO, Unit]
       wait <- Deferred[IO, Unit]
       completed <- Deferred[IO, Unit]
-      _ <- (cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- (started.complete(()) >> cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
+      _ <- started.get
+      _ <- IO.sleep(100.millis)
       _ <- taskInError.attempt
-      didOpen <- opened.get
+      _ <- opened.get.map(assertEquals(_, true))
       _ <- wait.complete(())
       _ <- completed.get
       didClose <- closed.get
-      out <- {
-        if (didOpen && didClose){
-          Succeeded.pure[IO]
-        } else if (!didOpen && !didClose) {
-          IO.raiseError(DidNotOpenOrClose)
-        } else if (!didOpen) {
-          IO.raiseError(DidNotOpen)
-        } else IO.raiseError(DidNotClose)
-      }
-    } yield out
+    } yield assertEquals(didClose, true)
 
-    test.unsafeToFuture()
-  }
-
-  test("Handles cancel correctly when half-open") {
-    val cb = CircuitBreaker
-      .of[IO](
-        maxFailures = 1,
-        resetTimeout = 200.millis,
-        exponentialBackoffFactor = 1,
-        maxResetTimeout = 1.second
-      )
-      .unsafeRunSync()
-
-    def unsafeState() = cb.state.unsafeRunSync()
-
-    val test = for {
-      _ <- cb.protect(IO.raiseError(new Exception("boom!"))).attempt.void
-      _ <- IO.sleep(200.millis)
-      fiberStarted <- Deferred[IO, Unit]
-      fiber <- cb
-        .protect[Unit](fiberStarted.complete(()) >> IO.never)
-        .start
-      _ <- fiberStarted.get
-      _ = unsafeState() shouldBe CircuitBreaker.HalfOpen
-      _ <- fiber.cancel
-    } yield
-      unsafeState() should matchPattern {
-        case CircuitBreaker.Open(_, t) if t == 200.millis =>
-      }
-    test.unsafeToFuture()
+    test
   }
 }
