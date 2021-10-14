@@ -1,6 +1,6 @@
 /*
  * Initial Copyright
- * 
+ *
  * Copyright (c) 2017-2018 The Typelevel Cats-effect Project Developers
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Modifications 
- * 
+ *
+ * Modifications
+ *
  * Copyright (C) 2019 Christopher Davenport
- * Edits: 
+ * Edits:
  * 1. Change Package
  * 2. Removed Platform specific testing
  */
@@ -145,7 +145,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       val cb = CircuitBreaker.in[SyncIO, IO](
         maxFailures = 5,
         resetTimeout = 500.millis,
-        exponentialBackoffFactor = 2,
+        backoff = Backoff.exponential,
         maxResetTimeout = 1.second
       ).unsafeRunSync()
 
@@ -215,7 +215,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = 100.millis,
-        exponentialBackoffFactor = 1,
+        backoff = Backoff.constant(100.millis),
         maxResetTimeout = 100.millis
       ).unsafeRunSync()
 
@@ -267,20 +267,11 @@ class CircuitBreakerTests extends CatsEffectSuite {
     }
 
     intercept[IllegalArgumentException] {
-      // exponentialBackoffFactor >= 1
-      CircuitBreaker.in[SyncIO, IO](
-        maxFailures = 2,
-        resetTimeout = 1.minute,
-        exponentialBackoffFactor = 0.5
-      ).unsafeRunSync()
-    }
-
-    intercept[IllegalArgumentException] {
       // Strictly positive maxResetTimeout
       CircuitBreaker.in[SyncIO, IO](
         maxFailures = 2,
         resetTimeout = 1.minute,
-        exponentialBackoffFactor = 2,
+        backoff = Backoff.exponential,
         maxResetTimeout = Duration.Zero
       ).unsafeRunSync()
     }
@@ -293,7 +284,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       .in[SyncIO, IO](
         maxFailures = 1,
         resetTimeout = 200.millis,
-        exponentialBackoffFactor = 1,
+        backoff = Backoff.constant(200.millis),
         maxResetTimeout = 1.second
       )
       .unsafeRunSync()
@@ -321,7 +312,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
       cb1 <- CircuitBreaker.of[IO](
         maxFailures = 1,
         resetTimeout = 1.minute,
-        exponentialBackoffFactor = 1,
+        backoff = Backoff.constant(1.minute),
         maxResetTimeout = 1.minute
       )
       opened <- Ref[IO].of(false)

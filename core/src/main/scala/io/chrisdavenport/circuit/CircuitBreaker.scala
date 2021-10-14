@@ -1,6 +1,6 @@
 /*
  * Initial Copyright
- * 
+ *
  * Copyright (c) 2017-2018 The Typelevel Cats-effect Project Developers
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Modifications 
- * 
+ *
+ * Modifications
+ *
  * Copyright (C) 2019 Christopher Davenport
- * Edits: 
+ * Edits:
  * 1. Change Package
  * 2. Change Documentation for new packages
  * 3. Fix Linking Error for ScalaDoc
@@ -94,8 +94,8 @@ import cats.Applicative
  *      the `Closed` state, with the `resetTimeout` and the
  *      `failures` count also reset to initial values
  *    - If the first call fails, the breaker is tripped again into
- *      the `Open` state (the `resetTimeout` is multiplied by the
- *      exponential backoff factor)
+ *      the `Open` state (the `resetTimeout` is calculated by the
+ *      backoff function)
  *
  * =Usage=
  *
@@ -121,14 +121,14 @@ import cats.Applicative
  * }}}
  *
  * When attempting to close the circuit breaker and resume normal
- * operations, we can also apply an exponential backoff for repeated
+ * operations, we can also apply a backoff function for repeated
  * failed attempts, like so:
  *
  * {{{
  *   val exponential = CircuitBreaker[IO].of(
  *     maxFailures = 5,
  *     resetTimeout = 10.seconds,
- *     exponentialBackoffFactor = 2,
+ *     backoff = Backoff.exponential,
  *     maxResetTimeout = 10.minutes
  *   )
  * }}}
@@ -141,20 +141,20 @@ import cats.Applicative
  *
  * This data type was inspired by the availability of
  * [[http://doc.akka.io/docs/akka/current/common/circuitbreaker.html Akka's Circuit Breaker]]
- * and ported to cats-effect from [[https://monix.io Monix]] and when its 
+ * and ported to cats-effect from [[https://monix.io Monix]] and when its
  * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]]
  */
 trait CircuitBreaker[F[_]] {
   /** Returns a new effect that upon execution will execute the given
    * effect with the protection of this circuit breaker.
-   * 
+   *
    * Actions are conditonal on action termination, either via timeout
    * cancellation, or some other user controlled mechanism. If a behavior
    * executes and never completes. If that was the sole responsible
    * carrier for a HalfOpen you could hold this infinitely in HalfOpen.
    * To prevent this please apply some mechanism to assure your
    * action completes eventually.
-   * 
+   *
    */
   def protect[A](fa: F[A]): F[A]
 
@@ -228,7 +228,7 @@ trait CircuitBreaker[F[_]] {
 
 object CircuitBreaker {
 
-  /** 
+  /**
    * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
@@ -239,23 +239,24 @@ object CircuitBreaker {
    *        opening the circuit breaker
    * @param resetTimeout is the timeout to wait in the `Open` state
    *        before attempting a close of the circuit breaker (but
-   *        without the backoff factor applied)
-   * @param exponentialBackoffFactor is a factor to use for resetting
-   *        the `resetTimeout` when in the `HalfOpen` state, in case
-   *        the attempt to `Close` fails
+   *        without the backoff function applied)
+   * @param backoff is a function from FiniteDuration to FiniteDuration used
+   *        to determine the `resetTimeout` when in the `HalfOpen` state,
+   *        in case the attempt to `Close` fails. [[Backoff]] provides some
+   *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
-   *        is allowed to use when applying the `exponentialBackoffFactor`
+   *        is allowed to use when applying the `backoff` result.
    */
   def of[F[_]](
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double = 1,
+    backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
     maxResetTimeout: Duration = Duration.Inf
   )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = {
-    of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
+    of(maxFailures, resetTimeout, backoff, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
   }
 
-  /** 
+  /**
    * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
@@ -266,23 +267,24 @@ object CircuitBreaker {
    *        opening the circuit breaker
    * @param resetTimeout is the timeout to wait in the `Open` state
    *        before attempting a close of the circuit breaker (but
-   *        without the backoff factor applied)
-   * @param exponentialBackoffFactor is a factor to use for resetting
-   *        the `resetTimeout` when in the `HalfOpen` state, in case
-   *        the attempt to `Close` fails
+   *        without the backoff function applied)
+   * @param backoff is a function from FiniteDuration to FiniteDuration used
+   *        to determine the `resetTimeout` when in the `HalfOpen` state,
+   *        in case the attempt to `Close` fails. [[Backoff]] provides some
+   *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
-   *        is allowed to use when applying the `exponentialBackoffFactor`
+   *        is allowed to use when applying the `backoff`
    */
   def in[F[_], G[_]](
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double = 1,
+    backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
     maxResetTimeout: Duration = Duration.Inf
   )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = {
-    in[F, G](maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
+    in[F, G](maxFailures, resetTimeout, backoff, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
   }
 
-  /** 
+  /**
    * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
@@ -293,12 +295,13 @@ object CircuitBreaker {
    *        opening the circuit breaker
    * @param resetTimeout is the timeout to wait in the `Open` state
    *        before attempting a close of the circuit breaker (but
-   *        without the backoff factor applied)
-   * @param exponentialBackoffFactor is a factor to use for resetting
-   *        the `resetTimeout` when in the `HalfOpen` state, in case
-   *        the attempt to `Close` fails
+   *        without the backoff function applied)
+   * @param backoff is a function from FiniteDuration to FiniteDuration used
+   *        to determine the `resetTimeout` when in the `HalfOpen` state,
+   *        in case the attempt to `Close` fails. [[Backoff]] provides some
+   *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
-   *        is allowed to use when applying the `exponentialBackoffFactor`
+   *        is allowed to use when applying the `backoff`
    *
    * @param onRejected is for signaling rejected tasks
    * @param onClosed is for signaling a transition to `Closed`
@@ -308,20 +311,20 @@ object CircuitBreaker {
   def of[F[_]](
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double,
+    backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
     onRejected: F[Unit],
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
-  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = 
-  
-  Concurrent[F].ref[State](ClosedZero).map(ref => 
+  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
+
+  Concurrent[F].ref[State](ClosedZero).map(ref =>
     new SyncCircuitBreaker[F](
       ref,
       maxFailures,
       resetTimeout,
-      exponentialBackoffFactor,
+      backoff,
       maxResetTimeout,
       onRejected,
       onClosed,
@@ -330,7 +333,7 @@ object CircuitBreaker {
     )
   )
 
-  /** 
+  /**
    * Builder for a [[CircuitBreaker]] reference.
    *
    * Effect returned by this operation produces a new
@@ -344,12 +347,13 @@ object CircuitBreaker {
    *        opening the circuit breaker
    * @param resetTimeout is the timeout to wait in the `Open` state
    *        before attempting a close of the circuit breaker (but
-   *        without the backoff factor applied)
-   * @param exponentialBackoffFactor is a factor to use for resetting
-   *        the `resetTimeout` when in the `HalfOpen` state, in case
-   *        the attempt to `Close` fails
+   *        without the backoff function applied)
+   * @param backoff is a function from FiniteDuration to FiniteDuration used
+   *        to determine the `resetTimeout` when in the `HalfOpen` state,
+   *        in case the attempt to `Close` fails. [[Backoff]] provides some
+   *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
-   *        is allowed to use when applying the `exponentialBackoffFactor`
+   *        is allowed to use when applying the `backoff`
    *
    * @param onRejected is for signaling rejected tasks
    * @param onClosed is for signaling a transition to `Closed`
@@ -359,7 +363,7 @@ object CircuitBreaker {
   def in[F[_], G[_]](
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double,
+    backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
     onRejected: G[Unit],
     onClosed: G[Unit],
@@ -371,7 +375,7 @@ object CircuitBreaker {
         ref,
         maxFailures,
         resetTimeout,
-        exponentialBackoffFactor,
+        backoff,
         maxResetTimeout,
         onRejected,
         onClosed,
@@ -383,14 +387,14 @@ object CircuitBreaker {
   /**
     * For Custom Ref Implementations
     * Ideally this will be in some valid state for the state machine and that
-    * maxFailures/resetTimeout/exponentialBackoffFactor/maxResetTimeout will all be
+    * maxFailures/resetTimeout/backoff/maxResetTimeout will all be
     * consistent across users or else you may wait based on incorrect information.
     */
   def unsafe[G[_]: Temporal](
     ref: Ref[G, State],
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double,
+    backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
     onRejected: G[Unit],
     onClosed: G[Unit],
@@ -400,7 +404,7 @@ object CircuitBreaker {
         ref,
         maxFailures,
         resetTimeout,
-        exponentialBackoffFactor,
+        backoff,
         maxResetTimeout,
         onRejected,
         onClosed,
@@ -455,9 +459,9 @@ object CircuitBreaker {
    * @param startedAt is the timestamp in milliseconds since the
    *        epoch when the transition to `Open` happened
    * @param resetTimeout is the current `resetTimeout` that is
-   *        applied to this `Open` state, to be multiplied by the
-   *        exponential backoff factor for the next transition from
-   *        `HalfOpen` to `Open`, in case the reset attempt fails
+   *        applied to this `Open` state, to be passed to the `backoff`
+   *        function for the next transition from `HalfOpen` to `Open`,
+   *        in case the reset attempt fails
    */
   final case class Open(startedAt: Timestamp, resetTimeout: FiniteDuration) extends State with Reason {
     /** The timestamp in milliseconds since the epoch, specifying
@@ -486,8 +490,8 @@ object CircuitBreaker {
    *    the `Closed` state, with the `resetTimeout` and the
    *    `failures` count also reset to initial values
    *  - If the first call fails, the breaker is tripped again into
-   *    the `Open` state (the `resetTimeout` is multiplied by the
-   *    exponential backoff factor)
+   *    the `Open` state (the `resetTimeout` is passed to the `backoff`
+   *    function)
    */
   case object HalfOpen extends State with Reason
 
@@ -503,7 +507,7 @@ object CircuitBreaker {
     ref: Ref[F, CircuitBreaker.State],
     maxFailures: Int,
     resetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double,
+    backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
     onRejected: F[Unit],
     onClosed: F[Unit],
@@ -514,7 +518,6 @@ object CircuitBreaker {
   ) extends CircuitBreaker[F] {
 
     require(maxFailures >= 0, "maxFailures >= 0")
-    require(exponentialBackoffFactor >= 1, "exponentialBackoffFactor >= 1")
     require(resetTimeout > Duration.Zero, "resetTimeout > 0")
     require(maxResetTimeout > Duration.Zero, "maxResetTimeout > 0")
 
@@ -529,7 +532,7 @@ object CircuitBreaker {
         ref = ref,
         maxFailures = maxFailures,
         resetTimeout = resetTimeout,
-        exponentialBackoffFactor = exponentialBackoffFactor,
+        backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         onRejected = onRejected,
         onClosed = onClosed,
@@ -543,7 +546,7 @@ object CircuitBreaker {
         ref = ref,
         maxFailures = maxFailures,
         resetTimeout = resetTimeout,
-        exponentialBackoffFactor = exponentialBackoffFactor,
+        backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         onRejected = onRejected,
         onClosed = onClosed,
@@ -557,7 +560,7 @@ object CircuitBreaker {
         ref = ref,
         maxFailures = maxFailures,
         resetTimeout = resetTimeout,
-        exponentialBackoffFactor = exponentialBackoffFactor,
+        backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         onRejected = onRejected,
         onClosed = onClosed,
@@ -572,7 +575,7 @@ object CircuitBreaker {
         ref = ref,
         maxFailures = maxFailures,
         resetTimeout = resetTimeout,
-        exponentialBackoffFactor = exponentialBackoffFactor,
+        backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         onRejected = onRejected,
         onClosed = onClosed,
@@ -591,7 +594,7 @@ object CircuitBreaker {
           }.flatten
         case Outcome.Errored(_) =>
           Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
-          
+
             ref.modify {
               case Closed(failures) =>
                 val count = failures + 1
@@ -605,8 +608,8 @@ object CircuitBreaker {
       }
     }
 
-    def backoff(open: Open, now: Timestamp): Open = {
-      def next = (open.resetTimeout.toMillis * exponentialBackoffFactor).millis
+    def nextBackoff(open: Open, now: Timestamp): Open = {
+      val next = backoff(open.resetTimeout)
       open.copy(
         startedAt = now,
         resetTimeout = maxResetTimeout match {
@@ -623,11 +626,11 @@ object CircuitBreaker {
           // This operation must succeed at setting backing to some other
           // operable state. Otherwise we can get into a state where
           // the Circuit Breaker is HalfOpen and all new requests are
-          // failed automatically. 
+          // failed automatically.
           def resetOnSuccess(poll: Poll[F]): F[A] = {
             poll(fa).guaranteeCase {
               case Outcome.Succeeded(_) => ref.set(ClosedZero) >> onClosed.attempt.void
-              case Outcome.Errored(_) => ref.set(backoff(open, now)) >> onOpen.attempt.void
+              case Outcome.Errored(_) => ref.set(nextBackoff(open, now)) >> onOpen.attempt.void
               case Outcome.Canceled() => ref.modify{
                   case HalfOpen => (open, onOpen.attempt.void)
                   case closed: Closed => (closed, F.unit)
@@ -648,7 +651,7 @@ object CircuitBreaker {
     }
 
     def protect[A](fa: F[A]): F[A] = {
-      Concurrent[F].uncancelable{poll => 
+      Concurrent[F].uncancelable{poll =>
         ref.get.flatMap {
           case _: Closed  => openOnFail(fa, poll)
           case open: Open  => tryReset(open, fa, poll)

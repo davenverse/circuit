@@ -72,7 +72,7 @@ can be in any of these 3 states:
 
 - If that task attempt succeeds, the breaker is reset back to the `Closed` state, with the `resetTimeout` and the `failures` count also reset to initial values
 
-- If the first call fails, the breaker is tripped again into the `Open` state (the `resetTimeout` is multiplied by the exponential backoff factor)
+- If the first call fails, the breaker is tripped again into the `Open` state (after the inital `resetTimeout` it's passed to `backoff` to calculate the next timeout)
 
 ## Usage
 
@@ -80,7 +80,7 @@ First some imports.
 
 ```scala mdoc:silent
 import cats.effect._
-import io.chrisdavenport.circuit.CircuitBreaker
+import io.chrisdavenport.circuit.{Backoff, CircuitBreaker}
 import scala.concurrent.duration._
 ```
 
@@ -110,7 +110,7 @@ When attempting to close the circuit breaker and resume normal operations, we ca
 val exponential = CircuitBreaker.of[IO](
   maxFailures = 5,
   resetTimeout = 10.seconds,
-  exponentialBackoffFactor = 2,
+  backoff = Backoff.exponential,
   maxResetTimeout = 10.minutes
 )
 ```
