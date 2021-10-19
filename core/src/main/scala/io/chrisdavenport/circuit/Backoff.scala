@@ -25,4 +25,11 @@ object Backoff {
     require(value >= Duration.Zero)
     _ => value
   }
+
+  /** Returns the previously used duration
+   *
+   *  This is useful if you want your wait time to always be the same as
+   *  the inital reset timeout.
+   */
+  def repeated: FiniteDuration => FiniteDuration = identity
 }
