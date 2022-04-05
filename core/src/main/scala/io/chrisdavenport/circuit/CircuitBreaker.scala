@@ -251,7 +251,7 @@ object CircuitBreaker {
     maxFailures: Int,
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
-    maxResetTimeout: Duration = Duration.Inf
+    maxResetTimeout: Duration = 1.minute
   )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = {
     of(maxFailures, resetTimeout, backoff, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
   }
@@ -279,7 +279,7 @@ object CircuitBreaker {
     maxFailures: Int,
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
-    maxResetTimeout: Duration = Duration.Inf
+    maxResetTimeout: Duration = 1.minute
   )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = {
     in[F, G](maxFailures, resetTimeout, backoff, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
   }
