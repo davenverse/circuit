@@ -121,4 +121,4 @@ maximum of 10 minutes.
 
 ## Credits
 
-This data type was inspired by the availability of [Akka's Circuit Breaker](http://doc.akka.io/docs/akka/current/common/circuitbreaker.html) and ported to cats-effect from [Monix](https://monix.io) and when its merger halted there, it was moved to [circuit](https://github.com/ChristopherDavenport/circuit)
+This data type was inspired by the availability of [Akka's Circuit Breaker](http://doc.akka.io/docs/akka/current/common/circuitbreaker.html) and ported to cats-effect from [Monix](https://monix.io) and when its merger halted there, it was moved to [circuit](https://github.com/ChristopherDavenport/circuit). The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this ref based version to exist.
