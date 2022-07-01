@@ -1,7 +1,7 @@
 /*
- * Initial Copyright
- *
- * Copyright (c) 2017-2018 The Typelevel Cats-effect Project Developers
+ * Initial Implementation by The Monix Project Developers
+ * Copyright (c) 2014-2018 Alexandru Nedelcu
+ * Copyright (c) 2014-2018 Oleg Pyzhcov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

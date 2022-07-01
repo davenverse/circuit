@@ -1,7 +1,7 @@
 /*
- * Initial Copyright
- *
- * Copyright (c) 2017-2018 The Typelevel Cats-effect Project Developers
+ * Initial Implementation by The Monix Project Developers
+ * Copyright (c) 2014-2018 Alexandru Nedelcu
+ * Copyright (c) 2014-2018 Oleg Pyzhcov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,11 +138,12 @@ import cats.Applicative
  * maximum of 10 minutes.
  *
  * =Credits=
- *
  * This data type was inspired by the availability of
  * [[http://doc.akka.io/docs/akka/current/common/circuitbreaker.html Akka's Circuit Breaker]]
  * and ported to cats-effect from [[https://monix.io Monix]] and when its
- * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]]
+ * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]].
+ * The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this 
+ * ref based version to exist.
  */
 trait CircuitBreaker[F[_]] {
   /** Returns a new effect that upon execution will execute the given
