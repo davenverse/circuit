@@ -28,16 +28,12 @@ import cats.syntax.all._
 import scala.concurrent.duration._
 import cats.effect._
 // import cats.effect.syntax._
-import cats.effect.unsafe._
 
 // import catalysts.Platform
 import munit.CatsEffectSuite
 
 class CircuitBreakerTests extends CatsEffectSuite {
   private val Tries = 10000 //if (Platform.isJvm) 10000 else 5000
-
-
-  implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
   private def mkBreaker() = CircuitBreaker.in[SyncIO, IO](
     maxFailures = 5,
@@ -334,5 +330,25 @@ class CircuitBreakerTests extends CatsEffectSuite {
     } yield assertEquals(didClose, true)
 
     test
+  }
+
+  test("should only count allowed exceptions") {
+    case class MyException(foo: String) extends Throwable
+
+    for {
+      circuitBreaker <- CircuitBreaker.of[IO](maxFailures = 1, resetTimeout = 10.seconds, exceptionFilter = !_.isInstanceOf[MyException])
+      action = circuitBreaker.protect(IO.raiseError(MyException("Boom!"))).attempt
+      _ <- action >> action >> action >> action
+      _ <- circuitBreaker.state.map {
+        case _: CircuitBreaker.Closed => assert(true)
+        case _ => assert(false)
+      }
+      badAction = circuitBreaker.protect(IO.raiseError(new RuntimeException("Boom!"))).attempt
+      _ <- badAction >> badAction >> badAction >> badAction
+      _ <- circuitBreaker.state.map {
+        case _: CircuitBreaker.Open => assert(true)
+        case _ => assert(false)
+      }
+    } yield ()
   }
 }
