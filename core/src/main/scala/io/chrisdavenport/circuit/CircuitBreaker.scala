@@ -594,7 +594,7 @@ object CircuitBreaker {
             case Open(_,_) => (ClosedZero, onClosed.attempt.void)
           }.flatten
         case Outcome.Errored(_) =>
-          Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
+          Temporal[F].realTime.map(_.toMillis).flatMap { now =>
 
             ref.modify {
               case Closed(failures) =>
@@ -621,7 +621,7 @@ object CircuitBreaker {
     }
 
     def tryReset[A](open: Open, fa: F[A], poll: Poll[F]): F[A] = {
-      Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
+      Temporal[F].realTime.map(_.toMillis).flatMap { now =>
         if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
