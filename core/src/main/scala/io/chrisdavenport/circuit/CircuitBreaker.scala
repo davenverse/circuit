@@ -253,9 +253,11 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
     maxResetTimeout: Duration = 1.minute
-  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = {
-    of(maxFailures, resetTimeout, backoff, maxResetTimeout, F.unit, F. unit, F.unit, F.unit)
-  }
+  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
+    default[F](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .build
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -281,9 +283,11 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
     maxResetTimeout: Duration = 1.minute
-  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = {
-    in[F, G](maxFailures, resetTimeout, backoff, maxResetTimeout, G.unit, G.unit, G.unit, G.unit)
-  }
+  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = 
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .in[F]
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -319,20 +323,14 @@ object CircuitBreaker {
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
   )(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
-
-  Concurrent[F].ref[State](ClosedZero).map(ref =>
-    new SyncCircuitBreaker[F](
-      ref,
-      maxFailures,
-      resetTimeout,
-      backoff,
-      maxResetTimeout,
-      onRejected,
-      onClosed,
-      onHalfOpen,
-      onOpen
-    )
-  )
+    default[F](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .build
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -371,19 +369,14 @@ object CircuitBreaker {
     onHalfOpen: G[Unit],
     onOpen: G[Unit]
   )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] =
-    Ref.in[F, G, State](ClosedZero).map { ref =>
-      new SyncCircuitBreaker[G](
-        ref,
-        maxFailures,
-        resetTimeout,
-        backoff,
-        maxResetTimeout,
-        onRejected,
-        onClosed,
-        onHalfOpen,
-        onOpen
-      )
-    }
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .in[F]
 
   /**
     * For Custom Ref Implementations
@@ -401,7 +394,112 @@ object CircuitBreaker {
     onClosed: G[Unit],
     onHalfOpen: G[Unit],
     onOpen: G[Unit]
-  ): CircuitBreaker[G] = new SyncCircuitBreaker[G](
+  ): CircuitBreaker[G] =
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .unsafe(ref)
+
+  def default[F[_]](
+    maxFailures: Int,
+    resetTimeout: FiniteDuration
+  )(implicit F: Applicative[F]): Builder[F] =
+    new Builder[F](
+      maxFailures = maxFailures,
+      resetTimeout = resetTimeout,
+      backoff = Backoff.exponential,
+      maxResetTimeout = 1.minute,
+      onRejected = F.unit,
+      onClosed = F.unit,
+      onHalfOpen = F.unit,
+      onOpen = F.unit
+    )
+
+  final class Builder[F[_]] private[circuit] (
+    private val maxFailures: Int,
+    private val resetTimeout: FiniteDuration,
+    private val backoff: FiniteDuration => FiniteDuration,
+    private val maxResetTimeout: Duration,
+    private val onRejected: F[Unit],
+    private val onClosed: F[Unit],
+    private val onHalfOpen: F[Unit],
+    private val onOpen: F[Unit]
+  ) { self =>
+
+    private def copy(
+      maxFailures: Int = self.maxFailures,
+      resetTimeout: FiniteDuration = self.resetTimeout,
+      backoff: FiniteDuration => FiniteDuration = self.backoff,
+      maxResetTimeout: Duration = self.maxResetTimeout,
+      onRejected: F[Unit] = self.onRejected,
+      onClosed: F[Unit] = self.onClosed,
+      onHalfOpen: F[Unit] = self.onHalfOpen,
+      onOpen: F[Unit] = self.onOpen
+    ): Builder[F] =
+      new Builder[F](
+        maxFailures = maxFailures,
+        resetTimeout = resetTimeout,
+        backoff = backoff,
+        maxResetTimeout = maxResetTimeout,
+        onRejected = onRejected,
+        onClosed = onClosed,
+        onHalfOpen = onHalfOpen,
+        onOpen = onOpen
+      )
+
+    def withMaxFailures(maxFailures: Int): Builder[F] =
+      copy(maxFailures = maxFailures)
+    def witResetTimeout(resetTimeout: FiniteDuration): Builder[F] =
+      copy(resetTimeout = resetTimeout)
+    def withBackOff(backoff: FiniteDuration => FiniteDuration): Builder[F] =
+      copy(backoff = backoff)
+    def withMaxResetTimout(maxResetTimeout: Duration): Builder[F] =
+      copy(maxResetTimeout = maxResetTimeout)
+    def withOnRejected(onRejected: F[Unit]): Builder[F] =
+      copy(onRejected = onRejected)
+    def withOnClosed(onClosed: F[Unit]): Builder[F] =
+      copy(onClosed = onClosed)
+    def withOnHalfOpen(onHalfOpen: F[Unit]): Builder[F] =
+      copy(onHalfOpen = onHalfOpen)
+    def withOnOpen(onOpen: F[Unit]): Builder[F] =
+      copy(onOpen = onOpen)
+
+    def build(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
+      Concurrent[F].ref[State](ClosedZero).map(ref =>
+        new SyncCircuitBreaker[F](
+          ref,
+          maxFailures,
+          resetTimeout,
+          backoff,
+          maxResetTimeout,
+          onRejected,
+          onClosed,
+          onHalfOpen,
+          onOpen
+        )
+      )
+
+    def in[G[_]: Sync](implicit F: Async[F]): G[CircuitBreaker[F]] =
+      Ref.in[G, F, State](ClosedZero).map { ref =>
+        new SyncCircuitBreaker[F](
+          ref,
+          maxFailures,
+          resetTimeout,
+          backoff,
+          maxResetTimeout,
+          onRejected,
+          onClosed,
+          onHalfOpen,
+          onOpen
+        )
+      }
+
+    def unsafe(ref: Ref[F, State])(implicit F: Temporal[F]): CircuitBreaker[F] =
+      new SyncCircuitBreaker[F](
         ref,
         maxFailures,
         resetTimeout,
@@ -412,6 +510,7 @@ object CircuitBreaker {
         onHalfOpen,
         onOpen
       )
+  }
 
   /** Type-alias to document timestamps specified in milliseconds, as returned by
    * Clock.realTime.
