@@ -1,184 +1,246 @@
-<!DOCTYPE html><html><head><title>circuit</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="davenverse" /><meta name="description" content="Circuit Breaker for Scala" /><meta name="og:image" content="/circuit/img/poster.png" /><meta name="image" property="og:image" content="/circuit/img/poster.png" /><meta name="og:title" content="circuit" /><meta name="title" property="og:title" content="circuit" /><meta name="og:site_name" content="circuit" /><meta name="og:url" content="https://github.com/davenverse/circuit" /><meta name="og:type" content="website" /><meta name="og:description" content="Circuit Breaker for Scala" /><link rel="icon" type="image/png" href="/circuit/img/favicon.png" /><meta name="twitter:title" content="circuit" /><meta name="twitter:image" content="/circuit/img/poster.png" /><meta name="twitter:description" content="Circuit Breaker for Scala" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/circuit/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/circuit/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/circuit/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/circuit/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/circuit/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/circuit/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/circuit/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/circuit/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/circuit/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/circuit/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/circuit/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/circuit/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/circuit/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/circuit/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/circuit/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/circuit/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/circuit/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/circuit/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/circuit/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/circuit/img/favicon310x150.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/circuit/highlight/styles/atom-one-light.css" /><link rel="stylesheet" href="/circuit/css/light-style.css" /></head><body class="home"><nav id="navigation" aria-labelledby="main-navigation"><div class="navbar-wrapper container"><div class="navigation-brand"><a href="/circuit/" class="brand background-mask"><div class="icon-wrapper"></div><span class="brand-title">circuit</span></a></div><div class="navigation-menu"><ul><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li><a href="https://github.com/davenverse/circuit" target="_blank" rel="noopener noreferrer"><i class="nav-item-icon fa fa-lg fa-github" hidden="true"></i><span class="nav-item-text">GitHub</span></a></li><li><a href="https://www.javadoc.io/doc/io.chrisdavenport/circuit_2.13"><i class="nav-item-icon fa fa-lg fa-file-text" hidden="true"></i><span class="nav-item-text">Documentation</span></a></li></ul></div></div></nav><header id="masthead"><div class="container text-center"><h1 class="masthead-description">Circuit Breaker for Scala</h1><a href="https://github.com/davenverse/circuit" target="_blank" rel="noopener noreferrer" class="masthead-button">View on GitHub</a></div></header><main id="site-main"><section class="main-content"><div class="container"><div id="content"><h1 id="circuit---circuit-breaker-for-scala--">circuit - Circuit Breaker for Scala <a href="https://travis-ci.com/ChristopherDavenport/circuit"><img src="https://travis-ci.com/ChristopherDavenport/circuit.svg?branch=master" alt="Build Status" /></a> <a href="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12"><img src="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg" alt="Maven Central" /></a></h1>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Laika 0.18.1 + Helium Theme" />
+    <title>circuit - Circuit Breaker for Scala <a href="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12"><img src="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg" alt="Maven Central"></a></title>
+    
+      <meta name="author" content="Christopher Davenport"/>
+    
+    
+      <meta name="description" content="site"/>
+    
+    
+      <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+    
+    
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+    
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+    
+    <link rel="stylesheet" type="text/css" href="helium/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/laika-helium.css" />
+    <link rel="stylesheet" type="text/css" href="site/styles.css" />
+    <script src="helium/laika-helium.js"></script>
+    
+    
+    <script> /* for avoiding page load transitions */ </script>
+  </head>
 
-<p>The <code class="language-plaintext highlighter-rouge">CircuitBreaker</code> is used to provide stability and prevent cascading failures in distributed systems.</p>
+  <body>
 
-<h2 id="quick-start">Quick Start</h2>
+    <header id="top-bar">
 
-<p>To use circuit in an existing SBT project with Scala 2.11 or a later version, add the following dependencies to your
-<code class="language-plaintext highlighter-rouge">build.sbt</code> depending on your needs:</p>
+      <div class="row">
+        <a id="nav-icon">
+          <i class="icofont-laika" title="Navigation">&#xefa2;</i>
+        </a>
+        
+      </div>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
-  <span class="s">"io.chrisdavenport"</span> <span class="o">%%</span> <span class="s">"circuit"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
-<span class="o">)</span>
-</code></pre></div></div>
+      <a class="image-link" href="https://typelevel.org"><img src="https://typelevel.org/img/logo.svg"></a>
 
-<h2 id="purpose">Purpose</h2>
+      <span class="row links"><a class="icon-link svg-link" href="https://github.com/davenverse/circuit"><span title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a><a class="icon-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika" title="Chat">&#xeed5;</i></a><a class="icon-link" href="https://twitter.com/typelevel"><i class="icofont-laika" title="Twitter">&#xed7a;</i></a></span>
 
-<p>As an example, we have a web application interacting with a remote
-third party web service. Let’s say the third party has oversold
-their capacity and their database melts down under load. Assume
-that the database fails in such a way that it takes a very long
-time to hand back an error to the third party web service. This in
-turn makes calls fail after a long period of time.  Back to our
-web application, the users have noticed that their form
-submissions take much longer seeming to hang. Well the users do
-what they know to do which is use the refresh button, adding more
-requests to their already running requests.  This eventually
-causes the failure of the web application due to resource
-exhaustion. This will affect all users, even those who are not
-using functionality dependent on this third party web service.</p>
+    </header>
 
-<p>Introducing circuit breakers on the web service call would cause
-the requests to begin to fail-fast, letting the user know that
-something is wrong and that they need not refresh their
-request. This also confines the failure behavior to only those
-users that are using functionality dependent on the third party,
-other users are no longer affected as there is no resource
-exhaustion. Circuit breakers can also allow savvy developers to
-mark portions of the site that use the functionality unavailable,
-or perhaps show some cached content as appropriate while the
-breaker is open.</p>
+    <nav id="sidebar">
 
-<h2 id="how-it-works">How It Works</h2>
+      <div class="row">
+        <a class="icon-link svg-link" href="https://github.com/davenverse/circuit"><span title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a><a class="icon-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika" title="Chat">&#xeed5;</i></a><a class="icon-link" href="https://twitter.com/typelevel"><i class="icofont-laika" title="Twitter">&#xed7a;</i></a>
+      </div>
 
-<p>The circuit breaker models a concurrent state machine that
-can be in any of these 3 states:</p>
+      <ul class="nav-list">
+        <li class="level1 active"><a href="#">circuit - Circuit Breaker for Scala <a href="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12"><img src="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg" alt="Maven Central"></a></a></li>
+      </ul>
 
-<p><strong>Closed</strong>: During normal operations or when the <code class="language-plaintext highlighter-rouge">CircuitBreaker</code> starts</p>
+      <ul class="nav-list">
+        <li class="level1 nav-header">Related Projects</li>
+        
+          <li class="level2"><a href="https://typelevel.org/cats/">cats</a></li>
+        
+      </ul>
 
-<ul>
-  <li>
-    <p>Exceptions increment the <code class="language-plaintext highlighter-rouge">failures</code> counter</p>
-  </li>
-  <li>
-    <p>Successes reset the failure count to zero</p>
-  </li>
-  <li>
-    <p>When the <code class="language-plaintext highlighter-rouge">failures</code> counter reaches the <code class="language-plaintext highlighter-rouge">maxFailures</code> count,the breaker is tripped into <code class="language-plaintext highlighter-rouge">Open</code> state</p>
-  </li>
-</ul>
+    </nav>
 
-<p><strong>Open</strong>: The circuit breaker rejects all tasks with an RejectedExecution</p>
+    <div id="container">
 
-<ul>
-  <li>
-    <p>all tasks fail fast with <code class="language-plaintext highlighter-rouge">RejectedExecution</code></p>
-  </li>
-  <li>
-    <p>after the configured <code class="language-plaintext highlighter-rouge">resetTimeout</code>, the circuit breaker enters a <code class="language-plaintext highlighter-rouge">HalfOpen</code> state, allowing one task to go through for testing the connection</p>
-  </li>
-</ul>
+      <nav id="page-nav">
+        <p class="header"><a href="#">circuit - Circuit Breaker for Scala <a href="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12"><img src="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg" alt="Maven Central"></a></a></p>
 
-<p><strong>HalfOpen</strong>: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection</p>
+        <ul class="nav-list">
+          <li class="level1"><a href="#quick-start">Quick Start</a></li>
+          <li class="level1"><a href="#purpose">Purpose</a></li>
+          <li class="level1"><a href="#how-it-works">How It Works</a></li>
+          <li class="level1"><a href="#usage">Usage</a></li>
+          <li class="level1"><a href="#credits">Credits</a></li>
+        </ul>
 
-<ul>
-  <li>
-    <p>The first task when <code class="language-plaintext highlighter-rouge">Open</code> has expired is allowed through without failing fast, just before the circuit breaker is evolved into the <code class="language-plaintext highlighter-rouge">HalfOpen</code> state</p>
-  </li>
-  <li>
-    <p>All tasks attempted in <code class="language-plaintext highlighter-rouge">HalfOpen</code> fail-fast with an exception just as in <code class="language-plaintext highlighter-rouge">Open</code> state</p>
-  </li>
-  <li>
-    <p>If that task attempt succeeds, the breaker is reset back to the <code class="language-plaintext highlighter-rouge">Closed</code> state, with the <code class="language-plaintext highlighter-rouge">resetTimeout</code> and the <code class="language-plaintext highlighter-rouge">failures</code> count also reset to initial values</p>
-  </li>
-  <li>
-    <p>If the first call fails, the breaker is tripped again into the <code class="language-plaintext highlighter-rouge">Open</code> state (after the inital <code class="language-plaintext highlighter-rouge">resetTimeout</code> it’s passed to <code class="language-plaintext highlighter-rouge">backoff</code> to calculate the next timeout)</p>
-  </li>
-</ul>
+        <p class="footer"></p>
+      </nav>
 
-<h2 id="usage">Usage</h2>
+      <main class="content">
 
-<p>First some imports.</p>
+        <h1 id="circuit-circuit-breaker-for-scala" class="title">circuit - Circuit Breaker for Scala <a href="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12"><img src="https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg" alt="Maven Central"></a></h1>
+        <p>The <code>CircuitBreaker</code> is used to provide stability and prevent cascading failures in distributed systems.</p>
+        
+        <h2 id="quick-start" class="section">Quick Start<a class="anchor-link right" href="#quick-start"><i class="icofont-laika">&#xef71;</i></a></h2>
+        <p>To use circuit in an existing SBT project with Scala 2.11 or a later version, add the following dependencies to your
+        <code>build.sbt</code> depending on your needs:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> ++= </span><span class="type-name">Seq</span><span>(
+  </span><span class="string-literal">&quot;io.chrisdavenport&quot;</span><span> %% </span><span class="string-literal">&quot;circuit&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span><span>
+)</span></code></pre>
+        
+        <h2 id="purpose" class="section">Purpose<a class="anchor-link right" href="#purpose"><i class="icofont-laika">&#xef71;</i></a></h2>
+        <p>As an example, we have a web application interacting with a remote
+        third party web service. Let&#39;s say the third party has oversold
+        their capacity and their database melts down under load. Assume
+        that the database fails in such a way that it takes a very long
+        time to hand back an error to the third party web service. This in
+        turn makes calls fail after a long period of time.  Back to our
+        web application, the users have noticed that their form
+        submissions take much longer seeming to hang. Well the users do
+        what they know to do which is use the refresh button, adding more
+        requests to their already running requests.  This eventually
+        causes the failure of the web application due to resource
+        exhaustion. This will affect all users, even those who are not
+        using functionality dependent on this third party web service.</p>
+        <p>Introducing circuit breakers on the web service call would cause
+        the requests to begin to fail-fast, letting the user know that
+        something is wrong and that they need not refresh their
+        request. This also confines the failure behavior to only those
+        users that are using functionality dependent on the third party,
+        other users are no longer affected as there is no resource
+        exhaustion. Circuit breakers can also allow savvy developers to
+        mark portions of the site that use the functionality unavailable,
+        or perhaps show some cached content as appropriate while the
+        breaker is open.</p>
+        
+        <h2 id="how-it-works" class="section">How It Works<a class="anchor-link right" href="#how-it-works"><i class="icofont-laika">&#xef71;</i></a></h2>
+        <p>The circuit breaker models a concurrent state machine that
+        can be in any of these 3 states:</p>
+        <p><strong>Closed</strong>: During normal operations or when the <code>CircuitBreaker</code> starts</p>
+        <ul>
+          <li>
+            <p>Exceptions increment the <code>failures</code> counter</p>
+          </li>
+          <li>
+            <p>Successes reset the failure count to zero</p>
+          </li>
+          <li>
+            <p>When the <code>failures</code> counter reaches the <code>maxFailures</code> count,the breaker is tripped into <code>Open</code> state</p>
+          </li>
+        </ul>
+        <p><strong>Open</strong>: The circuit breaker rejects all tasks with an RejectedExecution</p>
+        <ul>
+          <li>
+            <p>all tasks fail fast with <code>RejectedExecution</code></p>
+          </li>
+          <li>
+            <p>after the configured <code>resetTimeout</code>, the circuit breaker enters a <code>HalfOpen</code> state, allowing one task to go through for testing the connection</p>
+          </li>
+        </ul>
+        <p><strong>HalfOpen</strong>: The circuit breaker has already allowed a task to go through, as a reset attempt, in order to test the connection</p>
+        <ul>
+          <li>
+            <p>The first task when <code>Open</code> has expired is allowed through without failing fast, just before the circuit breaker is evolved into the <code>HalfOpen</code> state</p>
+          </li>
+          <li>
+            <p>All tasks attempted in <code>HalfOpen</code> fail-fast with an exception just as in <code>Open</code> state</p>
+          </li>
+          <li>
+            <p>If that task attempt succeeds, the breaker is reset back to the <code>Closed</code> state, with the <code>resetTimeout</code> and the <code>failures</code> count also reset to initial values</p>
+          </li>
+          <li>
+            <p>If the first call fails, the breaker is tripped again into the <code>Open</code> state (after the inital <code>resetTimeout</code> it&#39;s passed to <code>backoff</code> to calculate the next timeout)</p>
+          </li>
+        </ul>
+        
+        <h2 id="usage" class="section">Usage<a class="anchor-link right" href="#usage"><i class="icofont-laika">&#xef71;</i></a></h2>
+        <p>First some imports.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">io</span><span>.</span><span class="identifier">chrisdavenport</span><span>.</span><span class="identifier">circuit</span><span>.{</span><span class="type-name">Backoff</span><span>, </span><span class="type-name">CircuitBreaker</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span></code></pre>
+        <p>Then we construct the circuit breaker.</p>
+        <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">circuitBreaker</span><span> = </span><span class="type-name">CircuitBreaker</span><span>.</span><span class="identifier">of</span><span>[</span><span class="type-name">IO</span><span>](
+  </span><span class="identifier">maxFailures</span><span> = </span><span class="number-literal">5</span><span>,
+  </span><span class="identifier">resetTimeout</span><span> = </span><span class="number-literal">10</span><span>.</span><span class="identifier">seconds</span><span>
+)
+</span><span class="comment">// circuitBreaker: IO[CircuitBreaker[IO]] = Map(
+//   ioe = Delay(
+//     thunk = cats.effect.IO$$$Lambda$10715/1186415355@42c4a16,
+//     event = cats.effect.tracing.TracingEvent$StackTrace
+//   ),
+//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$10717/664999232@6361219b,
+//   event = cats.effect.tracing.TracingEvent$StackTrace
+// )
+</span><span>
+</span><span class="comment">//...
+</span><span class="keyword">val</span><span> </span><span class="identifier">problematic</span><span> = </span><span class="type-name">IO</span><span> {
+  </span><span class="keyword">val</span><span> </span><span class="identifier">nr</span><span> = </span><span class="identifier">scala</span><span>.</span><span class="identifier">util</span><span>.</span><span class="type-name">Random</span><span>.</span><span class="identifier">nextInt</span><span>()
+  </span><span class="keyword">if</span><span> (</span><span class="identifier">nr</span><span> % </span><span class="number-literal">2</span><span> == </span><span class="number-literal">0</span><span>) </span><span class="identifier">nr</span><span> </span><span class="keyword">else</span><span>
+    </span><span class="keyword">throw</span><span> </span><span class="keyword">new</span><span> </span><span class="type-name">RuntimeException</span><span>(</span><span class="string-literal">&quot;dummy&quot;</span><span>)
+}
+</span><span class="comment">// problematic: IO[Int] = Delay(
+//   thunk = &lt;function0&gt;,
+//   event = cats.effect.tracing.TracingEvent$StackTrace
+// )
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">task</span><span> = </span><span class="identifier">circuitBreaker</span><span>.</span><span class="identifier">flatMap</span><span>(
+  </span><span class="identifier">_</span><span>.</span><span class="identifier">protect</span><span>(</span><span class="identifier">problematic</span><span>) </span><span class="comment">// Circuit Breaker Shared State Location
+</span><span>)
+</span><span class="comment">// task: IO[Int] = FlatMap(
+//   ioe = Map(
+//     ioe = Delay(
+//       thunk = cats.effect.IO$$$Lambda$10715/1186415355@42c4a16,
+//       event = cats.effect.tracing.TracingEvent$StackTrace
+//     ),
+//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$10717/664999232@6361219b,
+//     event = cats.effect.tracing.TracingEvent$StackTrace
+//   ),
+//   f = &lt;function1&gt;,
+//   event = cats.effect.tracing.TracingEvent$StackTrace
+// )</span></code></pre>
+        <p>When attempting to close the circuit breaker and resume normal operations, we can also apply an exponential backoff for repeated failed attempts, like so:</p>
+        <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">exponential</span><span> = </span><span class="type-name">CircuitBreaker</span><span>.</span><span class="identifier">of</span><span>[</span><span class="type-name">IO</span><span>](
+  </span><span class="identifier">maxFailures</span><span> = </span><span class="number-literal">5</span><span>,
+  </span><span class="identifier">resetTimeout</span><span> = </span><span class="number-literal">10</span><span>.</span><span class="identifier">seconds</span><span>,
+  </span><span class="identifier">backoff</span><span> = </span><span class="type-name">Backoff</span><span>.</span><span class="identifier">exponential</span><span>,
+  </span><span class="identifier">maxResetTimeout</span><span> = </span><span class="number-literal">10</span><span>.</span><span class="identifier">minutes</span><span>
+)
+</span><span class="comment">// exponential: IO[CircuitBreaker[IO]] = Map(
+//   ioe = Delay(
+//     thunk = cats.effect.IO$$$Lambda$10715/1186415355@7197fe94,
+//     event = cats.effect.tracing.TracingEvent$StackTrace
+//   ),
+//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$10717/664999232@7635d8de,
+//   event = cats.effect.tracing.TracingEvent$StackTrace
+// )</span></code></pre>
+        <p>In this sample we attempt to reconnect after 10 seconds, then after
+        20, 40 and so on, a delay that keeps increasing up to a configurable
+        maximum of 10 minutes.</p>
+        
+        <h2 id="credits" class="section">Credits<a class="anchor-link right" href="#credits"><i class="icofont-laika">&#xef71;</i></a></h2>
+        <p>This data type was inspired by the availability of <a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akka&#39;s Circuit Breaker</a> and ported to cats-effect from <a href="https://monix.io">Monix</a> and when its merger halted there, it was moved to <a href="https://github.com/ChristopherDavenport/circuit">circuit</a>. The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this ref based version to exist.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
-<span class="k">import</span> <span class="nn">io.chrisdavenport.circuit.</span><span class="o">{</span><span class="nc">Backoff</span><span class="o">,</span> <span class="nc">CircuitBreaker</span><span class="o">}</span>
-<span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
-</code></pre></div></div>
+        <hr style="margin-top: 30px"/>
+        <footer style="font-size: 90%; text-align: center">
+          circuit is a <a href="https://typelevel.org/">Typelevel</a> project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0</a> license.
+        </footer>
 
-<p>Then we construct the circuit breaker.</p>
+      </main>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">circuitBreaker</span> <span class="k">=</span> <span class="nv">CircuitBreaker</span><span class="o">.</span><span class="py">of</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="n">maxFailures</span> <span class="k">=</span> <span class="mi">5</span><span class="o">,</span>
-  <span class="n">resetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">seconds</span>
-<span class="o">)</span>
-<span class="c1">// circuitBreaker: IO[CircuitBreaker[IO]] = Map(</span>
-<span class="c1">//   ioe = Delay(</span>
-<span class="c1">//     thunk = cats.effect.IO$$$Lambda$14655/312282726@578dcb63,</span>
-<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$14657/1244747872@2773af3b,</span>
-<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">// )</span>
+    </div>
 
-<span class="c1">//...</span>
-<span class="k">val</span> <span class="nv">problematic</span> <span class="k">=</span> <span class="nc">IO</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">nr</span> <span class="k">=</span> <span class="nv">scala</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">Random</span><span class="o">.</span><span class="py">nextInt</span><span class="o">()</span>
-  <span class="nf">if</span> <span class="o">(</span><span class="n">nr</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="n">nr</span> <span class="k">else</span>
-    <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">"dummy"</span><span class="o">)</span>
-<span class="o">}</span>
-<span class="c1">// problematic: IO[Int] = Delay(</span>
-<span class="c1">//   thunk = &lt;function0&gt;,</span>
-<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">// )</span>
-
-<span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">circuitBreaker</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span>
-  <span class="nv">_</span><span class="o">.</span><span class="py">protect</span><span class="o">(</span><span class="n">problematic</span><span class="o">)</span> <span class="c1">// Circuit Breaker Shared State Location</span>
-<span class="o">)</span>
-<span class="c1">// task: IO[Int] = FlatMap(</span>
-<span class="c1">//   ioe = Map(</span>
-<span class="c1">//     ioe = Delay(</span>
-<span class="c1">//       thunk = cats.effect.IO$$$Lambda$14655/312282726@578dcb63,</span>
-<span class="c1">//       event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">//     ),</span>
-<span class="c1">//     f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$14657/1244747872@2773af3b,</span>
-<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   f = &lt;function1&gt;,</span>
-<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>When attempting to close the circuit breaker and resume normal operations, we can also apply an exponential backoff for repeated failed attempts, like so:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">exponential</span> <span class="k">=</span> <span class="nv">CircuitBreaker</span><span class="o">.</span><span class="py">of</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="n">maxFailures</span> <span class="k">=</span> <span class="mi">5</span><span class="o">,</span>
-  <span class="n">resetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">seconds</span><span class="o">,</span>
-  <span class="n">backoff</span> <span class="k">=</span> <span class="nv">Backoff</span><span class="o">.</span><span class="py">exponential</span><span class="o">,</span>
-  <span class="n">maxResetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">minutes</span>
-<span class="o">)</span>
-<span class="c1">// exponential: IO[CircuitBreaker[IO]] = Map(</span>
-<span class="c1">//   ioe = Delay(</span>
-<span class="c1">//     thunk = cats.effect.IO$$$Lambda$14655/312282726@1a654d33,</span>
-<span class="c1">//     event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   f = io.chrisdavenport.circuit.CircuitBreaker$$$Lambda$14657/1244747872@189e376c,</span>
-<span class="c1">//   event = cats.effect.tracing.TracingEvent$StackTrace</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>In this sample we attempt to reconnect after 10 seconds, then after
-20, 40 and so on, a delay that keeps increasing up to a configurable
-maximum of 10 minutes.</p>
-
-<h2 id="credits">Credits</h2>
-
-<p>This data type was inspired by the availability of <a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akka’s Circuit Breaker</a> and ported to cats-effect from <a href="https://monix.io">Monix</a> and when its merger halted there, it was moved to <a href="https://github.com/ChristopherDavenport/circuit">circuit</a>. The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this ref based version to exist.</p>
-</div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><p>circuit is designed and developed by <a href="https://github.com/davenverse/circuit" target="_blank" rel="noopener noreferrer">davenverse</a></p></div></div></footer><script src="/circuit/highlight/highlight.pack.js"></script><script src="/circuit/lunr/lunr.js"></script><script>
-// For all code blocks, copy the language from the containing div
-// to the inner code tag (where hljs expects it to be)
-const langPrefix = 'language-';
-document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
-  div.classList.forEach(function(cssClass) {
-    if (cssClass.startsWith(langPrefix)) {
-      const lang = cssClass.substring(langPrefix.length);
-      div.querySelectorAll('pre code').forEach(function(code) {
-        code.classList.add(lang);
-      });
-    }
-  });
-});
-
-hljs.configure({languages:['scala','java','bash']});
-hljs.initHighlightingOnLoad();
-      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
-room: 'davenverse/circuit'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/circuit/js/version-selector.js"></script><script src="/circuit/js/search.js"></script></body></html>
+  </body>
+</html>
