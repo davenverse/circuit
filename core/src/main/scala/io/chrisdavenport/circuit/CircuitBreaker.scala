@@ -142,7 +142,7 @@ import cats.Applicative
  * [[http://doc.akka.io/docs/akka/current/common/circuitbreaker.html Akka's Circuit Breaker]]
  * and ported to cats-effect from [[https://monix.io Monix]] and when its
  * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]].
- * The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this 
+ * The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this
  * ref based version to exist.
  */
 trait CircuitBreaker[F[_]] {
@@ -413,6 +413,7 @@ object CircuitBreaker {
       resetTimeout = resetTimeout,
       backoff = Backoff.exponential,
       maxResetTimeout = 1.minute,
+      exceptionFilter = Function.const(true),
       onRejected = F.unit,
       onClosed = F.unit,
       onHalfOpen = F.unit,
@@ -424,10 +425,12 @@ object CircuitBreaker {
     private val resetTimeout: FiniteDuration,
     private val backoff: FiniteDuration => FiniteDuration,
     private val maxResetTimeout: Duration,
+    private val exceptionFilter: Throwable => Boolean,
     private val onRejected: F[Unit],
     private val onClosed: F[Unit],
     private val onHalfOpen: F[Unit],
-    private val onOpen: F[Unit]
+    private val onOpen: F[Unit],
+
   ) { self =>
 
     private def copy(
@@ -435,10 +438,11 @@ object CircuitBreaker {
       resetTimeout: FiniteDuration = self.resetTimeout,
       backoff: FiniteDuration => FiniteDuration = self.backoff,
       maxResetTimeout: Duration = self.maxResetTimeout,
+      exceptionFilter: Throwable => Boolean = self.exceptionFilter,
       onRejected: F[Unit] = self.onRejected,
       onClosed: F[Unit] = self.onClosed,
       onHalfOpen: F[Unit] = self.onHalfOpen,
-      onOpen: F[Unit] = self.onOpen
+      onOpen: F[Unit] = self.onOpen,
     ): Builder[F] =
       new Builder[F](
         maxFailures = maxFailures,
@@ -448,7 +452,8 @@ object CircuitBreaker {
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
-        onOpen = onOpen
+        onOpen = onOpen,
+        exceptionFilter = exceptionFilter,
       )
 
     def withMaxFailures(maxFailures: Int): Builder[F] =
@@ -467,6 +472,15 @@ object CircuitBreaker {
       copy(onHalfOpen = onHalfOpen)
     def withOnOpen(onOpen: F[Unit]): Builder[F] =
       copy(onOpen = onOpen)
+    /**
+      * Adds a custom exception filter.
+      *
+      * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
+      *        and false for those which should not (ie be treated the same as success)
+      * @return
+      */
+    def withExceptionFilter(exceptionFilter: Throwable => Boolean): Builder[F] =
+      copy(exceptionFilter = exceptionFilter)
 
     def build(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
       Concurrent[F].ref[State](ClosedZero).map(ref =>
@@ -476,6 +490,7 @@ object CircuitBreaker {
           resetTimeout,
           backoff,
           maxResetTimeout,
+          exceptionFilter,
           onRejected,
           onClosed,
           onHalfOpen,
@@ -491,6 +506,7 @@ object CircuitBreaker {
           resetTimeout,
           backoff,
           maxResetTimeout,
+          exceptionFilter,
           onRejected,
           onClosed,
           onHalfOpen,
@@ -505,6 +521,7 @@ object CircuitBreaker {
         resetTimeout,
         backoff,
         maxResetTimeout,
+        exceptionFilter,
         onRejected,
         onClosed,
         onHalfOpen,
@@ -609,6 +626,7 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
+    exceptionFilter: Throwable => Boolean,
     onRejected: F[Unit],
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
@@ -622,9 +640,7 @@ object CircuitBreaker {
     require(maxResetTimeout > Duration.Zero, "maxResetTimeout > 0")
 
 
-    def state: F[CircuitBreaker.State] =
-      ref.get
-
+    def state: F[CircuitBreaker.State] = ref.get
 
     def doOnRejected(callback: F[Unit]): CircuitBreaker[F] = {
       val onRejected = this.onRejected.flatMap(_ => callback)
@@ -634,6 +650,7 @@ object CircuitBreaker {
         resetTimeout = resetTimeout,
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
+        exceptionFilter = exceptionFilter,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -648,6 +665,7 @@ object CircuitBreaker {
         resetTimeout = resetTimeout,
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
+        exceptionFilter = exceptionFilter,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -662,6 +680,7 @@ object CircuitBreaker {
         resetTimeout = resetTimeout,
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
+        exceptionFilter = exceptionFilter,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -677,6 +696,7 @@ object CircuitBreaker {
         resetTimeout = resetTimeout,
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
+        exceptionFilter = exceptionFilter,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -692,14 +712,15 @@ object CircuitBreaker {
             case HalfOpen => (ClosedZero, onClosed.attempt.void)
             case Open(_,_) => (ClosedZero, onClosed.attempt.void)
           }.flatten
-        case Outcome.Errored(_) =>
+        case Outcome.Errored(e) =>
           Temporal[F].realTime.map(_.toMillis).flatMap { now =>
-
             ref.modify {
               case Closed(failures) =>
-                val count = failures + 1
-                if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void)
-                else (Closed(count), Applicative[F].unit)
+                if (exceptionFilter(e)) {
+                  val count = failures + 1
+                  if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void)
+                  else (Closed(count), Applicative[F].unit)
+                } else (ClosedZero, Applicative[F].unit)
               case open: Open => (open, Applicative[F].unit)
               case HalfOpen => (HalfOpen, Applicative[F].unit)
             }.flatten
@@ -730,7 +751,9 @@ object CircuitBreaker {
           def resetOnSuccess(poll: Poll[F]): F[A] = {
             poll(fa).guaranteeCase {
               case Outcome.Succeeded(_) => ref.set(ClosedZero) >> onClosed.attempt.void
-              case Outcome.Errored(_) => ref.set(nextBackoff(open, now)) >> onOpen.attempt.void
+              case Outcome.Errored(e) =>
+                if (exceptionFilter(e)) ref.set(nextBackoff(open, now)) >> onOpen.attempt.void
+                else ref.set(ClosedZero) >> onClosed.attempt.void
               case Outcome.Canceled() => ref.modify{
                   case HalfOpen => (open, onOpen.attempt.void)
                   case closed: Closed => (closed, F.unit)
