@@ -247,8 +247,6 @@ object CircuitBreaker {
    *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
    *        is allowed to use when applying the `backoff` result.
-   * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
-   *        and false for those which should not (ie be treated the same as success)
    */
   def of[F[_]](
     maxFailures: Int,
@@ -279,8 +277,6 @@ object CircuitBreaker {
    *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
    *        is allowed to use when applying the `backoff`
-   * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
-   *        and false for those which should not (ie be treated the same as success)
    */
   def in[F[_], G[_]](
     maxFailures: Int,
@@ -311,8 +307,6 @@ object CircuitBreaker {
    *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
    *        is allowed to use when applying the `backoff`
-   * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
-   *        and false for those which should not (ie be treated the same as success)
    *
    * @param onRejected is for signaling rejected tasks
    * @param onClosed is for signaling a transition to `Closed`
@@ -359,8 +353,6 @@ object CircuitBreaker {
    *        default implementations.
    * @param maxResetTimeout is the maximum timeout the circuit breaker
    *        is allowed to use when applying the `backoff`
-   * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
-   *        and false for those which should not (ie be treated the same as success)
    *
    * @param onRejected is for signaling rejected tasks
    * @param onClosed is for signaling a transition to `Closed`
@@ -480,6 +472,13 @@ object CircuitBreaker {
       copy(onHalfOpen = onHalfOpen)
     def withOnOpen(onOpen: F[Unit]): Builder[F] =
       copy(onOpen = onOpen)
+    /**
+      * Adds a custom exception filter.
+      *
+      * @param exceptionFilter a predicate that returns true for exceptions which should trigger the circuitbreaker,
+      *        and false for those which should not (ie be treated the same as success)
+      * @return
+      */
     def withExceptionFilter(exceptionFilter: Throwable => Boolean): Builder[F] =
       copy(exceptionFilter = exceptionFilter)
 
