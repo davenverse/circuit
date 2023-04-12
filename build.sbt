@@ -25,10 +25,8 @@ ThisBuild / crossScalaVersions := Seq("2.12.14", scala213, "3.2.2")
 
 ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
-lazy val `circuit` = project.in(file("."))
-  .disablePlugins(MimaPlugin)
-  .enablePlugins(NoPublishPlugin)
-  .aggregate(core.jvm, core.js)
+lazy val `circuit` =  tlCrossRootProject
+  .aggregate(core)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
