@@ -1,9 +1,4 @@
----
-layout: home
-
----
-
-# circuit - Circuit Breaker for Scala [![Build Status](https://travis-ci.com/ChristopherDavenport/circuit.svg?branch=master)](https://travis-ci.com/ChristopherDavenport/circuit) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12)
+# circuit - Circuit Breaker for Scala [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/circuit_2.12)
 
 The `CircuitBreaker` is used to provide stability and prevent cascading failures in distributed systems.
 

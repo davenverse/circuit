@@ -142,7 +142,7 @@ import cats.Applicative
  * [[http://doc.akka.io/docs/akka/current/common/circuitbreaker.html Akka's Circuit Breaker]]
  * and ported to cats-effect from [[https://monix.io Monix]] and when its
  * merger halted there, it was moved to [[https://github.com/ChristopherDavenport/circuit circuit]].
- * The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this 
+ * The initial implementation and port by Alexandru Nedelcu and Oleg Pyzhcov was what enabled this
  * ref based version to exist.
  */
 trait CircuitBreaker[F[_]] {
@@ -254,11 +254,12 @@ object CircuitBreaker {
     maxFailures: Int,
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
-    maxResetTimeout: Duration = 1.minute,
-    exceptionFilter: Throwable => Boolean = Function.const(true)
-  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] = {
-    of(maxFailures, resetTimeout, backoff, maxResetTimeout, exceptionFilter, F.unit, F. unit, F.unit, F.unit)
-  }
+    maxResetTimeout: Duration = 1.minute
+  )(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
+    default[F](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .build
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -285,11 +286,12 @@ object CircuitBreaker {
     maxFailures: Int,
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration = Backoff.exponential,
-    maxResetTimeout: Duration = 1.minute,
-    exceptionFilter: Throwable => Boolean = Function.const(true)
-  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = {
-    in[F, G](maxFailures, resetTimeout, backoff, maxResetTimeout, exceptionFilter, G.unit, G.unit, G.unit, G.unit)
-  }
+    maxResetTimeout: Duration = 1.minute
+  )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] = 
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .in[F]
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -322,27 +324,19 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
-    exceptionFilter: Throwable => Boolean,
     onRejected: F[Unit],
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
     onOpen: F[Unit]
   )(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
-
-  Concurrent[F].ref[State](ClosedZero).map(ref =>
-    new SyncCircuitBreaker[F](
-      ref,
-      maxFailures,
-      resetTimeout,
-      backoff,
-      maxResetTimeout,
-      exceptionFilter,
-      onRejected,
-      onClosed,
-      onHalfOpen,
-      onOpen
-    )
-  )
+    default[F](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .build
 
   /**
    * Builder for a [[CircuitBreaker]] reference.
@@ -378,26 +372,19 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
-    exceptionFilter: Throwable => Boolean,
     onRejected: G[Unit],
     onClosed: G[Unit],
     onHalfOpen: G[Unit],
     onOpen: G[Unit]
   )(implicit F: Sync[F], G: Async[G]): F[CircuitBreaker[G]] =
-    Ref.in[F, G, State](ClosedZero).map { ref =>
-      new SyncCircuitBreaker[G](
-        ref,
-        maxFailures,
-        resetTimeout,
-        backoff,
-        maxResetTimeout,
-        exceptionFilter,
-        onRejected,
-        onClosed,
-        onHalfOpen,
-        onOpen
-      )
-    }
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .in[F]
 
   /**
     * For Custom Ref Implementations
@@ -411,23 +398,137 @@ object CircuitBreaker {
     resetTimeout: FiniteDuration,
     backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
-    exceptionFilter: Throwable => Boolean,
     onRejected: G[Unit],
     onClosed: G[Unit],
     onHalfOpen: G[Unit],
     onOpen: G[Unit]
-  ): CircuitBreaker[G] = new SyncCircuitBreaker[G](
+  ): CircuitBreaker[G] =
+    default[G](maxFailures, resetTimeout)
+      .withBackOff(backoff)
+      .withMaxResetTimout(maxResetTimeout)
+      .withOnRejected(onRejected)
+      .withOnClosed(onClosed)
+      .withOnHalfOpen(onHalfOpen)
+      .withOnOpen(onOpen)
+      .unsafe(ref)
+
+  def default[F[_]](
+    maxFailures: Int,
+    resetTimeout: FiniteDuration
+  )(implicit F: Applicative[F]): Builder[F] =
+    new Builder[F](
+      maxFailures = maxFailures,
+      resetTimeout = resetTimeout,
+      backoff = Backoff.exponential,
+      maxResetTimeout = 1.minute,
+      exceptionFilter = Function.const(true),
+      onRejected = F.unit,
+      onClosed = F.unit,
+      onHalfOpen = F.unit,
+      onOpen = F.unit
+    )
+
+  final class Builder[F[_]] private[circuit] (
+    private val maxFailures: Int,
+    private val resetTimeout: FiniteDuration,
+    private val backoff: FiniteDuration => FiniteDuration,
+    private val maxResetTimeout: Duration,
+    private val exceptionFilter: Throwable => Boolean,
+    private val onRejected: F[Unit],
+    private val onClosed: F[Unit],
+    private val onHalfOpen: F[Unit],
+    private val onOpen: F[Unit],
+
+  ) { self =>
+
+    private def copy(
+      maxFailures: Int = self.maxFailures,
+      resetTimeout: FiniteDuration = self.resetTimeout,
+      backoff: FiniteDuration => FiniteDuration = self.backoff,
+      maxResetTimeout: Duration = self.maxResetTimeout,
+      exceptionFilter: Throwable => Boolean = self.exceptionFilter,
+      onRejected: F[Unit] = self.onRejected,
+      onClosed: F[Unit] = self.onClosed,
+      onHalfOpen: F[Unit] = self.onHalfOpen,
+      onOpen: F[Unit] = self.onOpen,
+    ): Builder[F] =
+      new Builder[F](
+        maxFailures = maxFailures,
+        resetTimeout = resetTimeout,
+        backoff = backoff,
+        maxResetTimeout = maxResetTimeout,
+        onRejected = onRejected,
+        onClosed = onClosed,
+        onHalfOpen = onHalfOpen,
+        onOpen = onOpen,
+        exceptionFilter = exceptionFilter,
+      )
+
+    def withMaxFailures(maxFailures: Int): Builder[F] =
+      copy(maxFailures = maxFailures)
+    def witResetTimeout(resetTimeout: FiniteDuration): Builder[F] =
+      copy(resetTimeout = resetTimeout)
+    def withBackOff(backoff: FiniteDuration => FiniteDuration): Builder[F] =
+      copy(backoff = backoff)
+    def withMaxResetTimout(maxResetTimeout: Duration): Builder[F] =
+      copy(maxResetTimeout = maxResetTimeout)
+    def withOnRejected(onRejected: F[Unit]): Builder[F] =
+      copy(onRejected = onRejected)
+    def withOnClosed(onClosed: F[Unit]): Builder[F] =
+      copy(onClosed = onClosed)
+    def withOnHalfOpen(onHalfOpen: F[Unit]): Builder[F] =
+      copy(onHalfOpen = onHalfOpen)
+    def withOnOpen(onOpen: F[Unit]): Builder[F] =
+      copy(onOpen = onOpen)
+    def withExceptionFilter(f: Throwable => Boolean): Builder[F] =
+      copy(exceptionFilter = f)
+
+    def build(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
+      Concurrent[F].ref[State](ClosedZero).map(ref =>
+        new SyncCircuitBreaker[F](
+          ref,
+          maxFailures,
+          resetTimeout,
+          backoff,
+          maxResetTimeout,
+          exceptionFilter,
+          onRejected,
+          onClosed,
+          onHalfOpen,
+          onOpen
+        )
+      )
+
+    def in[G[_]: Sync](implicit F: Async[F]): G[CircuitBreaker[F]] =
+      Ref.in[G, F, State](ClosedZero).map { ref =>
+        new SyncCircuitBreaker[F](
+          ref,
+          maxFailures,
+          resetTimeout,
+          backoff,
+          maxResetTimeout,
+          exceptionFilter,
+          onRejected,
+          onClosed,
+          onHalfOpen,
+          onOpen
+        )
+      }
+
+    def unsafe(ref: Ref[F, State])(implicit F: Temporal[F]): CircuitBreaker[F] =
+      new SyncCircuitBreaker[F](
         ref,
         maxFailures,
         resetTimeout,
         backoff,
         maxResetTimeout,
-    exceptionFilter,
+        exceptionFilter,
         onRejected,
         onClosed,
         onHalfOpen,
         onOpen
       )
+  }
 
   /** Type-alias to document timestamps specified in milliseconds, as returned by
    * Clock.realTime.
@@ -613,7 +714,7 @@ object CircuitBreaker {
             case Open(_,_) => (ClosedZero, onClosed.attempt.void)
           }.flatten
         case Outcome.Errored(e) =>
-          Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
+          Temporal[F].realTime.map(_.toMillis).flatMap { now =>
             ref.modify {
               case closed @ Closed(failures) =>
                 if (exceptionFilter(e)) {
@@ -641,7 +742,7 @@ object CircuitBreaker {
     }
 
     def tryReset[A](open: Open, fa: F[A], poll: Poll[F]): F[A] = {
-      Temporal[F].monotonic.map(_.toMillis).flatMap { now =>
+      Temporal[F].realTime.map(_.toMillis).flatMap { now =>
         if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
