@@ -1,4 +1,4 @@
-ThisBuild / tlBaseVersion := "0.6" // your current series x.y
+ThisBuild / tlBaseVersion := "0.5" // your current series x.y
 
 ThisBuild / organization := "io.chrisdavenport"
 ThisBuild / organizationName := "Christopher Davenport"
