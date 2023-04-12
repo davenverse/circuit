@@ -480,8 +480,8 @@ object CircuitBreaker {
       copy(onHalfOpen = onHalfOpen)
     def withOnOpen(onOpen: F[Unit]): Builder[F] =
       copy(onOpen = onOpen)
-    def withExceptionFilter(f: Throwable => Boolean): Builder[F] =
-      copy(exceptionFilter = f)
+    def withExceptionFilter(exceptionFilter: Throwable => Boolean): Builder[F] =
+      copy(exceptionFilter = exceptionFilter)
 
     def build(implicit F: Temporal[F]): F[CircuitBreaker[F]] =
       Concurrent[F].ref[State](ClosedZero).map(ref =>

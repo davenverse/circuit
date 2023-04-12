@@ -336,7 +336,7 @@ class CircuitBreakerTests extends CatsEffectSuite {
     case class MyException(foo: String) extends Throwable
 
     for {
-      circuitBreaker <- CircuitBreaker.of[IO](maxFailures = 1, resetTimeout = 10.seconds, exceptionFilter = !_.isInstanceOf[MyException])
+      circuitBreaker <- CircuitBreaker.default[IO](maxFailures = 1, resetTimeout = 10.seconds).withExceptionFilter(exceptionFilter = !_.isInstanceOf[MyException]).build
       action = circuitBreaker.protect(IO.raiseError(MyException("Boom!"))).attempt
       _ <- action >> action >> action >> action
       _ <- circuitBreaker.state.map {
