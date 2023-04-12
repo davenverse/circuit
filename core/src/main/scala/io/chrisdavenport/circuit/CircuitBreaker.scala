@@ -715,12 +715,12 @@ object CircuitBreaker {
         case Outcome.Errored(e) =>
           Temporal[F].realTime.map(_.toMillis).flatMap { now =>
             ref.modify {
-              case closed @ Closed(failures) =>
+              case Closed(failures) =>
                 if (exceptionFilter(e)) {
                   val count = failures + 1
                   if (count >= maxFailures) (Open(now, resetTimeout), onOpen.attempt.void)
                   else (Closed(count), Applicative[F].unit)
-                } else (closed, Applicative[F].unit)
+                } else (ClosedZero, Applicative[F].unit)
               case open: Open => (open, Applicative[F].unit)
               case HalfOpen => (HalfOpen, Applicative[F].unit)
             }.flatten
