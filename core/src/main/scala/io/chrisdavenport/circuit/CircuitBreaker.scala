@@ -414,6 +414,7 @@ object CircuitBreaker {
       backoff = Backoff.exponential,
       maxResetTimeout = 1.minute,
       exceptionFilter = Function.const(true),
+      cancelableHalfOpen = true,
       onRejected = F.unit,
       onClosed = F.unit,
       onHalfOpen = F.unit,
@@ -426,6 +427,7 @@ object CircuitBreaker {
     private val backoff: FiniteDuration => FiniteDuration,
     private val maxResetTimeout: Duration,
     private val exceptionFilter: Throwable => Boolean,
+    private val cancelableHalfOpen: Boolean,
     private val onRejected: F[Unit],
     private val onClosed: F[Unit],
     private val onHalfOpen: F[Unit],
@@ -439,6 +441,7 @@ object CircuitBreaker {
       backoff: FiniteDuration => FiniteDuration = self.backoff,
       maxResetTimeout: Duration = self.maxResetTimeout,
       exceptionFilter: Throwable => Boolean = self.exceptionFilter,
+      cancelableHalfOpen: Boolean = self.cancelableHalfOpen,
       onRejected: F[Unit] = self.onRejected,
       onClosed: F[Unit] = self.onClosed,
       onHalfOpen: F[Unit] = self.onHalfOpen,
@@ -449,6 +452,7 @@ object CircuitBreaker {
         resetTimeout = resetTimeout,
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
+        cancelableHalfOpen = cancelableHalfOpen,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -464,6 +468,10 @@ object CircuitBreaker {
       copy(backoff = backoff)
     def withMaxResetTimout(maxResetTimeout: Duration): Builder[F] =
       copy(maxResetTimeout = maxResetTimeout)
+    def withCancelableHalfOpen: Builder[F] =
+      copy(cancelableHalfOpen = true)
+    def withUncancelableHalfOpen: Builder[F] =
+      copy(cancelableHalfOpen = false)
     def withOnRejected(onRejected: F[Unit]): Builder[F] =
       copy(onRejected = onRejected)
     def withOnClosed(onClosed: F[Unit]): Builder[F] =
@@ -491,6 +499,7 @@ object CircuitBreaker {
           backoff,
           maxResetTimeout,
           exceptionFilter,
+          cancelableHalfOpen,
           onRejected,
           onClosed,
           onHalfOpen,
@@ -507,6 +516,7 @@ object CircuitBreaker {
           backoff,
           maxResetTimeout,
           exceptionFilter,
+          cancelableHalfOpen,
           onRejected,
           onClosed,
           onHalfOpen,
@@ -522,6 +532,7 @@ object CircuitBreaker {
         backoff,
         maxResetTimeout,
         exceptionFilter,
+        cancelableHalfOpen,
         onRejected,
         onClosed,
         onHalfOpen,
@@ -627,6 +638,7 @@ object CircuitBreaker {
     backoff: FiniteDuration => FiniteDuration,
     maxResetTimeout: Duration,
     exceptionFilter: Throwable => Boolean,
+    cancelableHalfOpen: Boolean,
     onRejected: F[Unit],
     onClosed: F[Unit],
     onHalfOpen: F[Unit],
@@ -651,6 +663,7 @@ object CircuitBreaker {
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         exceptionFilter = exceptionFilter,
+        cancelableHalfOpen = cancelableHalfOpen,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -666,6 +679,7 @@ object CircuitBreaker {
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         exceptionFilter = exceptionFilter,
+        cancelableHalfOpen = cancelableHalfOpen,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -681,6 +695,7 @@ object CircuitBreaker {
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         exceptionFilter = exceptionFilter,
+        cancelableHalfOpen = cancelableHalfOpen,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -697,6 +712,7 @@ object CircuitBreaker {
         backoff = backoff,
         maxResetTimeout = maxResetTimeout,
         exceptionFilter = exceptionFilter,
+        cancelableHalfOpen = cancelableHalfOpen,
         onRejected = onRejected,
         onClosed = onClosed,
         onHalfOpen = onHalfOpen,
@@ -749,7 +765,7 @@ object CircuitBreaker {
           // the Circuit Breaker is HalfOpen and all new requests are
           // failed automatically.
           def resetOnSuccess(poll: Poll[F]): F[A] = {
-            poll(fa).guaranteeCase {
+            (if (cancelableHalfOpen) poll(fa) else fa).guaranteeCase {
               case Outcome.Succeeded(_) => ref.set(ClosedZero) >> onClosed.attempt.void
               case Outcome.Errored(e) =>
                 if (exceptionFilter(e)) ref.set(nextBackoff(open, now)) >> onOpen.attempt.void
