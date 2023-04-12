@@ -351,4 +351,32 @@ class CircuitBreakerTests extends CatsEffectSuite {
       }
     } yield ()
   }
+
+  test("Validate withUncancelableHalfOpen") {
+    closesAfterHalfOpenCancelation(cancelable = false).assertEquals(true)
+  }
+
+  test("Validate withCancelableHalfOpen") {
+    closesAfterHalfOpenCancelation(cancelable = true).assertEquals(false)
+  }
+
+  private def closesAfterHalfOpenCancelation(cancelable: Boolean): IO[Boolean] = {
+    val configure: CircuitBreaker.Builder[IO] => CircuitBreaker.Builder[IO] =
+      if (cancelable) _.withCancelableHalfOpen else _.withUncancelableHalfOpen
+    val reset = 10.millis
+    for {
+      closed <- Ref[IO].of(false)
+      cb <- configure(
+        CircuitBreaker
+          .default[IO](maxFailures = 1, resetTimeout = reset)
+          .withOnClosed(closed.set(true))
+      ).build
+      _ <- cb.protect(IO.raiseError[Unit](new RuntimeException("boom"))).attempt
+      _ <- IO.sleep(reset * 5) // wait until no longer fast failing
+      slowButSucceeds = IO.sleep(50.millis)
+      _ <- cb.protect(slowButSucceeds).timeout(1.millis).attempt
+      // check if circuit breaker closed after `slowButSucceeds` should be finished
+      didClose <- IO.sleep(75.millis) >> closed.get
+    } yield didClose
+  }
 }
