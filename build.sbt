@@ -23,7 +23,7 @@ val scalaTestV = "3.2.9"
 
 val scala213 = "2.13.8"
 ThisBuild / scalaVersion := scala213
-ThisBuild / crossScalaVersions := Seq("2.12.14", scala213, "3.2.2")
+ThisBuild / crossScalaVersions := Seq("2.12.17", scala213, "3.2.2")
 
 ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
