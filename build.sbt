@@ -1,4 +1,6 @@
-ThisBuild / tlBaseVersion := "0.6" // your current series x.y
+import com.typesafe.tools.mima.core._
+
+ThisBuild / tlBaseVersion := "0.5" // your current series x.y
 
 ThisBuild / organization := "io.chrisdavenport"
 ThisBuild / organizationName := "Christopher Davenport"
@@ -28,6 +30,7 @@ ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses
 lazy val `circuit` = tlCrossRootProject
   .aggregate(core)
 
+
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
@@ -38,8 +41,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel"               %%% "cats-effect"                % catsEffectV,
       "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M3" % Test,
     ),
+    mimaBinaryIssueFilters := Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.circuit.CircuitBreaker#SyncCircuitBreaker.this")
+    ),
   ).jsSettings(
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule)},
+  ).nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.5.1").toMap
   )
 
 lazy val site = project.in(file("site"))
