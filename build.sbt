@@ -18,7 +18,7 @@ ThisBuild / tlSonatypeUseLegacyHost := true
 ThisBuild / testFrameworks += new TestFramework("munit.Framework")
 
 val catsV = "2.9.0"
-val catsEffectV = "3.4.8"
+val catsEffectV = "3.4.11"
 val scalaTestV = "3.2.9"
 
 val scala213 = "2.13.8"
