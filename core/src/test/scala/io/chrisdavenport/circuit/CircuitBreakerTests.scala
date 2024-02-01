@@ -25,11 +25,9 @@
 package io.chrisdavenport.circuit
 
 import cats.syntax.all._
+
 import scala.concurrent.duration._
 import cats.effect._
-// import cats.effect.syntax._
-
-// import catalysts.Platform
 import munit.CatsEffectSuite
 
 class CircuitBreakerTests extends CatsEffectSuite {
@@ -304,12 +302,13 @@ class CircuitBreakerTests extends CatsEffectSuite {
   }
 
   test("Validate onClosed is called when closing from longRunning openOnFail"){
+    val resetDuration = 100.milliseconds
     val test = for {
       cb1 <- CircuitBreaker.of[IO](
         maxFailures = 1,
-        resetTimeout = 1.minute,
-        backoff = Backoff.constant(1.minute),
-        maxResetTimeout = 1.minute
+        resetTimeout = resetDuration,
+        backoff = Backoff.constant(resetDuration),
+        maxResetTimeout = resetDuration
       )
       opened <- Ref[IO].of(false)
       closed <- Ref[IO].of(false)
@@ -321,13 +320,112 @@ class CircuitBreakerTests extends CatsEffectSuite {
       completed <- Deferred[IO, Unit]
       _ <- (started.complete(()) >> cb.protect(wait.get) >> completed.complete(())).start // Will reset when wait completes
       _ <- started.get
-      _ <- IO.sleep(100.millis)
+      _ <- IO.sleep(10.millis)
       _ <- taskInError.attempt
       _ <- opened.get.map(assertEquals(_, true))
+      _ <- IO.sleep(resetDuration)
       _ <- wait.complete(())
       _ <- completed.get
       didClose <- closed.get
     } yield assertEquals(didClose, true)
+
+    test
+  }
+
+  test("Validate behaviour for one slower than expiration call followed by failing fast calls"){
+    val resetTimeout = 100.milliseconds
+    val slowDuration = resetTimeout + 50.milliseconds
+    val test = for {
+      cb1 <- CircuitBreaker.of[IO](
+        maxFailures = 1,
+        resetTimeout = resetTimeout,
+        backoff = Backoff.constant(resetTimeout),
+        maxResetTimeout = resetTimeout
+      )
+      opened <- Ref[IO].of(false)
+      halfOpened <- Ref[IO].of(false)
+      closed <- Ref[IO].of(false)
+      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true)).doOnHalfOpen(halfOpened.set(true))
+      dummy = new RuntimeException("dummy")
+      taskInError = cb.protect(IO[Int](throw dummy))
+      taskSlowSucceeds = cb.protect(IO.sleep(slowDuration))
+      _ <- taskSlowSucceeds.start
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Closed => assert(true)
+        case _ => assert(false)
+      }
+      _ <- taskInError.attempt
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Open => assert(true)
+        case _ => assert(false)
+      }
+      _ <- taskSlowSucceeds.attempt.map{
+        case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
+        case _ => assert(false)
+      }
+      _ <- IO.sleep(slowDuration + 10.milliseconds) // `taskSlowSucceeds` finishes after expiration and closes `cb`
+      _ <- taskSlowSucceeds.attempt
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Closed => assert(true)
+        case x => println(x); assert(false)
+      }
+    } yield ()
+
+    test
+  }
+
+  test("Validate behaviour for one slow call followed by fast calls"){
+    val resetTimeout = 100.milliseconds
+    val slowDuration = 50.milliseconds
+    val test = for {
+      cb1 <- CircuitBreaker.of[IO](
+        maxFailures = 1,
+        resetTimeout = resetTimeout,
+        backoff = Backoff.constant(resetTimeout),
+        maxResetTimeout = resetTimeout
+      )
+      opened <- Ref[IO].of(false)
+      halfOpened <- Ref[IO].of(false)
+      closed <- Ref[IO].of(false)
+      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true)).doOnHalfOpen(halfOpened.set(true))
+      dummy = new RuntimeException("dummy")
+      taskInError = cb.protect(IO[Int](throw dummy))
+      taskSlowSucceeds = cb.protect(IO.sleep(slowDuration))
+      _ <- taskSlowSucceeds.start
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Closed => assert(true)
+        case _ => assert(false)
+      }
+      _ <- taskInError.attempt
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Open => assert(true)
+        case _ => assert(false)
+      }
+      _ <- taskSlowSucceeds.attempt.map{
+        case Left(_) => assert(true)
+        case _ => assert(false)
+      }
+      _ <- IO.sleep(slowDuration) // `taskSlowSucceeds` finishes before expiration and leaved `cb` open
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Open => assert(true)
+        case _ => assert(false)
+      }
+      _ <- IO.sleep(resetTimeout) // next call will half-open `cb`
+      _ <- IO.racePair(taskSlowSucceeds, taskSlowSucceeds).map {
+        case Left((Outcome.Errored(_: CircuitBreaker.RejectedExecution), _)) => assert(true)
+        case Right((_, Outcome.Errored(_: CircuitBreaker.RejectedExecution))) => assert(true)
+        case _ => assert(false)
+      }
+      _ <- cb.state.map {
+        case CircuitBreaker.HalfOpen => assert(true)
+        case _ => assert(false)
+      }
+      _ <- IO.sleep(resetTimeout)
+      _ <- cb.state.map {
+        case _: CircuitBreaker.Closed => assert(true)
+        case _ => assert(false)
+      }
+    } yield ()
 
     test
   }

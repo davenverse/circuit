@@ -22,6 +22,7 @@
  * 1. Change Package
  * 2. Change Documentation for new packages
  * 3. Fix Linking Error for ScalaDoc
+ * 4. Do not allow closing, if expiration duration has not passed
  */
 package io.chrisdavenport.circuit
 
@@ -723,11 +724,14 @@ object CircuitBreaker {
     def openOnFail[A](f: F[A], poll: Poll[F]): F[A] = {
       poll(f).guaranteeCase {
         case Outcome.Succeeded(_) =>
-          ref.modify{
-            case Closed(_) => (ClosedZero, F.unit)
-            case HalfOpen => (ClosedZero, onClosed.attempt.void)
-            case Open(_,_) => (ClosedZero, onClosed.attempt.void)
-          }.flatten
+          Temporal[F].realTime.map(_.toMillis).flatMap { now =>
+            ref.modify {
+              case Closed(_) => (ClosedZero, F.unit)
+              case HalfOpen => (ClosedZero, onClosed.attempt.void)
+              case o: Open if o.expiresAt >= now => (o, F.unit)
+              case Open(_, _) => (ClosedZero, onClosed.attempt.void)
+            }.flatten
+          }
         case Outcome.Errored(e) =>
           Temporal[F].realTime.map(_.toMillis).flatMap { now =>
             ref.modify {
@@ -792,8 +796,8 @@ object CircuitBreaker {
     def protect[A](fa: F[A]): F[A] = {
       Concurrent[F].uncancelable{poll =>
         ref.get.flatMap {
-          case _: Closed  => openOnFail(fa, poll)
-          case open: Open  => tryReset(open, fa, poll)
+          case _: Closed => openOnFail(fa, poll)
+          case open: Open => tryReset(open, fa, poll)
           case HalfOpen => onRejected.attempt >> poll(F.raiseError[A](RejectedExecution(HalfOpen)))
         }
       }
