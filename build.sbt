@@ -47,7 +47,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   ).jsSettings(
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule)},
   ).nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.5.1").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "1.15.0").toMap
   )
 
 lazy val site = project.in(file("site"))
