@@ -758,7 +758,12 @@ object CircuitBreaker {
 
     def tryReset[A](open: Open, fa: F[A], poll: Poll[F]): F[A] = {
       Temporal[F].realTime.map(_.toMillis).flatMap { now =>
-        if (open.expiresAt >= now) onRejected >> F.raiseError(RejectedExecution(open))
+        // Strictly greater: at exactly expiresAt the reset timeout has fully
+        // elapsed, so the reset attempt is due. Rejecting on equality also
+        // makes `now == expiresAt` unreachable in practice, because millisecond
+        // truncation means a perfectly precise sleep of resetTimeout lands
+        // exactly on the boundary.
+        if (open.expiresAt > now) onRejected >> F.raiseError(RejectedExecution(open))
         else {
           // This operation must succeed at setting backing to some other
           // operable state. Otherwise we can get into a state where
