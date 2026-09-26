@@ -1,6 +1,6 @@
 import com.typesafe.tools.mima.core._
 
-ThisBuild / tlBaseVersion := "0.6" // your current series x.y
+ThisBuild / tlBaseVersion := "0.7" // your current series x.y
 
 ThisBuild / organization := "io.chrisdavenport"
 ThisBuild / organizationName := "Christopher Davenport"
@@ -14,13 +14,13 @@ ThisBuild / tlCiReleaseBranches := Seq()
 
 ThisBuild / testFrameworks += new TestFramework("munit.Framework")
 
-val catsV = "2.9.0"
-val catsEffectV = "3.4.8"
-val scalaTestV = "3.2.9"
+val catsV = "2.13.0"
+val catsEffectV = "3.7.1"
+val scalaTestV = "3.3.8"
 
 val scala213 = "2.13.18"
 ThisBuild / scalaVersion := scala213
-ThisBuild / crossScalaVersions := Seq("2.12.14", scala213, "3.3.8")
+ThisBuild / crossScalaVersions := Seq(scala213, "3.3.8")
 
 ThisBuild / licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
@@ -36,7 +36,10 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "org.typelevel"               %%% "cats-core"                  % catsV,
       "org.typelevel"               %%% "cats-effect"                % catsEffectV,
-      "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M3" % Test,
+      "org.typelevel" %%% "munit-cats-effect" % "2.2.1" % Test,
+      // TestControl, for asserting on reset-timeout boundaries against a
+      // virtual clock rather than a real one.
+      "org.typelevel" %%% "cats-effect-testkit" % catsEffectV % Test,
     ),
     mimaBinaryIssueFilters := Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.circuit.CircuitBreaker#SyncCircuitBreaker.this")

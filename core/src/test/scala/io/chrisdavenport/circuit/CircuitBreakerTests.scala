@@ -27,6 +27,7 @@ package io.chrisdavenport.circuit
 import cats.syntax.all._
 import scala.concurrent.duration._
 import cats.effect._
+import cats.effect.testkit.TestControl
 // import cats.effect.syntax._
 
 // import catalysts.Platform
@@ -301,6 +302,29 @@ class CircuitBreakerTests extends CatsEffectSuite {
       }
     } yield ()
     test
+  }
+
+  test("Reset attempt is allowed at exactly expiresAt") {
+    // Against a virtual clock, sleeping exactly resetTimeout lands `now` on
+    // expiresAt. That is not a contrived case: expiresAt is startedAt plus the
+    // timeout in truncated milliseconds, so a perfectly precise real timer
+    // produces it too, and rejecting on equality made the reset unreachable.
+    val prog = for {
+      cb <- CircuitBreaker.of[IO](
+              maxFailures = 1,
+              resetTimeout = 200.millis,
+              backoff = Backoff.constant(200.millis),
+              maxResetTimeout = 1.second
+            )
+      _ <- cb.protect(IO.raiseError(new Exception("boom!"))).attempt.void
+      _ <- IO.sleep(200.millis)
+      r <- cb.protect(IO.pure(42)).attempt
+    } yield r
+
+    TestControl.executeEmbed(prog).map {
+      case Right(v) => assertEquals(v, 42)
+      case Left(err) => fail(s"reset rejected exactly at expiresAt: $err")
+    }
   }
 
   test("Validate onClosed is called when closing from longRunning openOnFail"){
