@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        scala: [2.12, 2.13, 3]
+        scala: [2.13, 3]
         java: [temurin@8]
         project: [circuitJVM, circuitNative, circuitJS]
     runs-on: ${{ matrix.os }}
@@ -122,36 +122,6 @@ jobs:
       - name: sbt update
         if: matrix.java == 'temurin@8' && steps.setup-java-temurin-8.outputs.cache-hit == 'false'
         run: sbt +update
-
-      - name: Download target directories (2.12, circuitJVM)
-        uses: actions/download-artifact@v6
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12-circuitJVM
-
-      - name: Inflate target directories (2.12, circuitJVM)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
-
-      - name: Download target directories (2.12, circuitNative)
-        uses: actions/download-artifact@v6
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12-circuitNative
-
-      - name: Inflate target directories (2.12, circuitNative)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
-
-      - name: Download target directories (2.12, circuitJS)
-        uses: actions/download-artifact@v6
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12-circuitJS
-
-      - name: Inflate target directories (2.12, circuitJS)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
 
       - name: Download target directories (2.13, circuitJVM)
         uses: actions/download-artifact@v6
@@ -270,7 +240,7 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: site_2.12 site_2.13 site_3 circuitjvm_2.12 circuitjvm_2.13 circuitjvm_3 circuitnative_2.12 circuitnative_2.13 circuitnative_3 circuitjs_2.12 circuitjs_2.13 circuitjs_3
+          modules-ignore: site_2.13 site_3 circuitjvm_2.13 circuitjvm_3 circuitnative_2.13 circuitnative_3 circuitjs_2.13 circuitjs_3
           configs-ignore: test scala-tool scala-doc-tool test-internal
 
   site:
