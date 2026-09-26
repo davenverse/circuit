@@ -37,6 +37,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel"               %%% "cats-core"                  % catsV,
       "org.typelevel"               %%% "cats-effect"                % catsEffectV,
       "org.typelevel" %%% "munit-cats-effect" % "2.2.1" % Test,
+      // TestControl, for asserting on reset-timeout boundaries against a
+      // virtual clock rather than a real one.
+      "org.typelevel" %%% "cats-effect-testkit" % catsEffectV % Test,
     ),
     mimaBinaryIssueFilters := Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.circuit.CircuitBreaker#SyncCircuitBreaker.this")
