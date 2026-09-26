@@ -630,6 +630,7 @@ object CircuitBreaker {
    */
   final case class RejectedExecution (reason: Reason)
     extends RuntimeException(s"Execution rejected: $reason")
+    with scala.util.control.NoStackTrace
 
   private final class SyncCircuitBreaker[F[_]] (
     ref: Ref[F, CircuitBreaker.State],
