@@ -729,7 +729,13 @@ object CircuitBreaker {
             ref.modify {
               case Closed(_) => (ClosedZero, F.unit)
               case HalfOpen => (ClosedZero, onClosed.attempt.void)
-              case o: Open if o.expiresAt >= now => (o, F.unit)
+              // A call that began while Closed says nothing about a breaker
+              // other failures have Opened since, so it must not reset one
+              // whose window is still running. Once the window has elapsed the
+              // breaker is due to probe anyway, so closing on it is fine.
+              // Strict, to match tryReset: at exactly expiresAt the window is
+              // over.
+              case o: Open if o.expiresAt > now => (o, F.unit)
               case Open(_, _) => (ClosedZero, onClosed.attempt.void)
             }.flatten
           }

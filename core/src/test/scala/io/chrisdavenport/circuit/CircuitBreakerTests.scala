@@ -359,102 +359,63 @@ class CircuitBreakerTests extends CatsEffectSuite {
     test
   }
 
-  test("Validate behaviour for one slower than expiration call followed by failing fast calls"){
+  // Both scenarios below come from #301 / #302, rewritten against TestControl.
+  // As real-clock tests they raced the very boundary they were asserting on.
+  test("A success from a call started while Closed leaves a breaker opened since it Open") {
     val resetTimeout = 100.milliseconds
-    val slowDuration = resetTimeout + 50.milliseconds
-    val test = for {
-      cb1 <- CircuitBreaker.of[IO](
-        maxFailures = 1,
-        resetTimeout = resetTimeout,
-        backoff = Backoff.constant(resetTimeout),
-        maxResetTimeout = resetTimeout
-      )
-      opened <- Ref[IO].of(false)
-      halfOpened <- Ref[IO].of(false)
-      closed <- Ref[IO].of(false)
-      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true)).doOnHalfOpen(halfOpened.set(true))
-      dummy = new RuntimeException("dummy")
-      taskInError = cb.protect(IO[Int](throw dummy))
-      taskSlowSucceeds = cb.protect(IO.sleep(slowDuration))
-      _ <- taskSlowSucceeds.start
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Closed => assert(true)
-        case _ => assert(false)
-      }
-      _ <- taskInError.attempt
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Open => assert(true)
-        case _ => assert(false)
-      }
-      _ <- taskSlowSucceeds.attempt.map{
-        case Left(_: CircuitBreaker.RejectedExecution) => assert(true)
-        case _ => assert(false)
-      }
-      _ <- IO.sleep(slowDuration + 10.milliseconds) // `taskSlowSucceeds` finishes after expiration and closes `cb`
-      _ <- taskSlowSucceeds.attempt
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Closed => assert(true)
-        case x => println(x); assert(false)
-      }
-    } yield ()
+    val prog = for {
+      cb <- CircuitBreaker.of[IO](
+              maxFailures = 1,
+              resetTimeout = resetTimeout,
+              backoff = Backoff.constant(resetTimeout),
+              maxResetTimeout = resetTimeout
+            )
+      // Must be inside protect's Closed path before the failure opens the
+      // breaker, otherwise it is simply rejected and proves nothing.
+      entered <- Deferred[IO, Unit]
+      slow <- cb.protect(entered.complete(()) >> IO.sleep(50.milliseconds)).start
+      _ <- entered.get
+      _ <- cb.protect(IO.raiseError[Unit](new RuntimeException("dummy"))).attempt
+      opened <- cb.state
+      _ <- slow.join
+      after <- cb.state
+    } yield (opened, after)
 
-    test
+    TestControl.executeEmbed(prog).map { case (opened, after) =>
+      opened match {
+        case _: CircuitBreaker.Open => ()
+        case s => fail(s"expected the failure to Open the breaker, got $s")
+      }
+      after match {
+        case _: CircuitBreaker.Open => ()
+        case s => fail(s"a success from a call started while Closed reset the breaker: $s")
+      }
+    }
   }
 
-  test("Validate behaviour for one slow call followed by fast calls"){
+  test("A success outliving the open window closes the breaker") {
     val resetTimeout = 100.milliseconds
-    val slowDuration = 50.milliseconds
-    val test = for {
-      cb1 <- CircuitBreaker.of[IO](
-        maxFailures = 1,
-        resetTimeout = resetTimeout,
-        backoff = Backoff.constant(resetTimeout),
-        maxResetTimeout = resetTimeout
-      )
-      opened <- Ref[IO].of(false)
-      halfOpened <- Ref[IO].of(false)
-      closed <- Ref[IO].of(false)
-      cb = cb1.doOnOpen(opened.set(true)).doOnClosed(closed.set(true)).doOnHalfOpen(halfOpened.set(true))
-      dummy = new RuntimeException("dummy")
-      taskInError = cb.protect(IO[Int](throw dummy))
-      taskSlowSucceeds = cb.protect(IO.sleep(slowDuration))
-      _ <- taskSlowSucceeds.start
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Closed => assert(true)
-        case _ => assert(false)
-      }
-      _ <- taskInError.attempt
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Open => assert(true)
-        case _ => assert(false)
-      }
-      _ <- taskSlowSucceeds.attempt.map{
-        case Left(_) => assert(true)
-        case _ => assert(false)
-      }
-      _ <- IO.sleep(slowDuration) // `taskSlowSucceeds` finishes before expiration and leaved `cb` open
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Open => assert(true)
-        case _ => assert(false)
-      }
-      _ <- IO.sleep(resetTimeout) // next call will half-open `cb`
-      _ <- IO.racePair(taskSlowSucceeds, taskSlowSucceeds).map {
-        case Left((Outcome.Errored(_: CircuitBreaker.RejectedExecution), _)) => assert(true)
-        case Right((_, Outcome.Errored(_: CircuitBreaker.RejectedExecution))) => assert(true)
-        case _ => assert(false)
-      }
-      _ <- cb.state.map {
-        case CircuitBreaker.HalfOpen => assert(true)
-        case _ => assert(false)
-      }
-      _ <- IO.sleep(resetTimeout)
-      _ <- cb.state.map {
-        case _: CircuitBreaker.Closed => assert(true)
-        case _ => assert(false)
-      }
-    } yield ()
+    val prog = for {
+      cb <- CircuitBreaker.of[IO](
+              maxFailures = 1,
+              resetTimeout = resetTimeout,
+              backoff = Backoff.constant(resetTimeout),
+              maxResetTimeout = resetTimeout
+            )
+      // Starts while Closed but outlives the window, so by the time it lands
+      // the breaker is due to probe anyway.
+      entered <- Deferred[IO, Unit]
+      slow <- cb.protect(entered.complete(()) >> IO.sleep(resetTimeout + 50.milliseconds)).start
+      _ <- entered.get
+      _ <- cb.protect(IO.raiseError[Unit](new RuntimeException("dummy"))).attempt
+      _ <- slow.join
+      after <- cb.state
+    } yield after
 
-    test
+    TestControl.executeEmbed(prog).map {
+      case _: CircuitBreaker.Closed => ()
+      case s => fail(s"expected the breaker to close once the window had elapsed, got $s")
+    }
   }
 
   test("should only count allowed exceptions") {
